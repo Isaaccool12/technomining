@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:engineer/core/result.dart';
 import 'package:engineer/features/reports/application/report_pdf.dart';

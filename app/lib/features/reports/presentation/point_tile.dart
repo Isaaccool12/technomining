@@ -97,8 +97,7 @@ class _PointTileState extends ConsumerState<PointTile> {
           child: Text(
             [
               for (final reading in widget.point.readings)
-                '${formatDate(reading.atUtcMs)} — ${_shown(reading)} '
-                    '${widget.point.tolerance.unit}',
+                '${formatDate(reading.atUtcMs)} — ${_shown(reading)} ${widget.point.tolerance.unit}',
             ].join('\n'),
           ),
         ),

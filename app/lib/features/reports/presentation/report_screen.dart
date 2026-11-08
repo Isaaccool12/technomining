@@ -11,7 +11,7 @@ import 'package:engineer/features/reports/domain/tolerance.dart';
 import 'package:engineer/features/reports/presentation/photo_annotate_screen.dart';
 import 'package:engineer/features/reports/presentation/point_tile.dart';
 import 'package:engineer/features/reports/presentation/tolerance_badge.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Tolerance;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void _showFailure(ScaffoldMessengerState messenger, Result<Object?, ReportFailure> result) {

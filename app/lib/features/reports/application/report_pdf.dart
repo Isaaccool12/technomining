@@ -214,7 +214,6 @@ List<pw.Widget> _node(PrintNode node, Map<String, Uint8List> photos) {
               pw.Image(
                 pw.MemoryImage(bytes),
                 height: 230,
-                fit: pw.BoxFit.contain,
               ),
               if (photo.caption.trim().isNotEmpty)
                 pw.Text(
