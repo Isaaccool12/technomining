@@ -1,0 +1,138 @@
+name: Конвертер PDF → пакет
+
+# Заводская инструкция (PDF) → пакеты приложения (ZIP по агрегатам).
+# Запуск: Actions → «Конвертер PDF → пакет» → Run workflow (работает и с телефона).
+# Результат: архив на странице запуска (раздел Artifacts), хранится 30 дней.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pdf:
+        description: 'PDF: имя файла в релизе pdf-library (например SEN02158-15.pdf) или ссылка (Яндекс Диск, Google Диск, прямая)'
+        required: true
+      machine:
+        description: 'Модель машины (HD785-7, D275A-5, ...)'
+        required: true
+        default: 'HD785-7'
+      doc:
+        description: 'Обозначение инструкции (SEN02158-15, SRU05900-01, ...)'
+        required: true
+      parallel:
+        description: 'Только для английской: русская инструкция-пара той же машины (имя в релизе или ссылка)'
+        required: false
+        default: ''
+      parallel_doc:
+        description: 'Обозначение русской пары (например SRBM026307)'
+        required: false
+        default: ''
+      agg:
+        description: 'Инструкция на один агрегат: код агрегата (например eng). Пусто — разбить по агрегатам'
+        required: false
+        default: ''
+      mt:
+        description: 'Машинный перевод несопоставленного (нужен секрет ANTHROPIC_API_KEY)'
+        type: choice
+        options: [none, claude]
+        default: none
+      extra:
+        description: 'Дополнительные параметры kpdf2pack.py (например --dpi 130 --pages 1700-1765)'
+        required: false
+        default: ''
+  push:
+    branches: [main]
+    paths: ['.github/workflows/convert.yml']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: convert-${{ github.event.inputs.doc || 'init' }}
+  cancel-in-progress: false
+
+jobs:
+  # При изменении этого файла: создать релиз pdf-library (хранилище PDF), если его ещё нет.
+  init:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Релиз pdf-library
+        run: |
+          if gh release view pdf-library --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Релиз pdf-library уже есть"
+          else
+            gh release create pdf-library --repo "$GITHUB_REPOSITORY" --prerelease \
+              --title "Библиотека PDF для конвертера" \
+              --notes "Заводские инструкции (PDF) — вход для workflow «Конвертер PDF → пакет». Добавить файл: Edit → перетащить PDF (до 2 ГБ). Имя файла — обозначение инструкции латиницей, например SEN02158-15.pdf."
+          fi
+
+  convert:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      IN_PDF: ${{ inputs.pdf }}
+      IN_MACHINE: ${{ inputs.machine }}
+      IN_DOC: ${{ inputs.doc }}
+      IN_PAR: ${{ inputs.parallel }}
+      IN_PAR_DOC: ${{ inputs.parallel_doc }}
+      IN_AGG: ${{ inputs.agg }}
+      IN_MT: ${{ inputs.mt }}
+      IN_EXTRA: ${{ inputs.extra }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: converter/requirements.txt
+
+      - name: Зависимости
+        run: pip install -r converter/requirements.txt
+
+      - name: Скачать PDF
+        run: |
+          bash converter/fetch_pdf.sh "$IN_PDF" work/main.pdf
+          if [ -n "$IN_PAR" ]; then bash converter/fetch_pdf.sh "$IN_PAR" work/parallel.pdf; fi
+
+      - name: Конвертация
+        run: |
+          set -o pipefail
+          args=(work/main.pdf out --machine "$IN_MACHINE" --doc "$IN_DOC" --mt "$IN_MT")
+          [ -n "$IN_PAR" ] && args+=(--parallel work/parallel.pdf)
+          [ -n "$IN_PAR_DOC" ] && args+=(--parallel-doc "$IN_PAR_DOC")
+          [ -n "$IN_AGG" ] && args+=(--agg "$IN_AGG")
+          if [ "$IN_MT" = claude ] && [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::warning::Выбран машинный перевод, но секрет ANTHROPIC_API_KEY не задан — перевод пропущен"
+          fi
+          mkdir -p out
+          # shellcheck disable=SC2086
+          python -u converter/kpdf2pack.py "${args[@]}" $IN_EXTRA 2>&1 | tee out/log.txt
+
+      - name: Итог
+        if: always()
+        run: |
+          {
+            echo "## $IN_MACHINE · $IN_DOC"
+            echo
+            if [ -f out/summary.json ]; then
+              echo '```json'; head -c 6000 out/summary.json; echo; echo '```'
+            fi
+            echo
+            echo "Пакеты:"; ls -1sh out/*.zip 2>/dev/null | sed 's/^/- /' || echo "- нет"
+            [ -f out/untranslated.csv ] && echo && echo "Без перевода: $(($(wc -l < out/untranslated.csv)-1)) строк (untranslated.csv в архиве)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Сохранить результат
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.machine }}_${{ inputs.doc }}_pack
+          path: out/
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: warn
