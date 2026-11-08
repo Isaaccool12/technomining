@@ -51,6 +51,11 @@ final class _FakeSettings implements SettingsRepository {
 }
 
 final class _NoReports implements ReportRepository {
+  // Members the screens under test never reach.
+  @override
+  Object? noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError(invocation.memberName.toString());
+
   static const Err<Never, ReportFailure> _missing = Err(ReportFailure.missing);
 
   @override

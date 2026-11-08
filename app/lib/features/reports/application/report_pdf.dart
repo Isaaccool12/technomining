@@ -147,6 +147,83 @@ pw.Widget _fieldsTable(List<PrintField> fields) => pw.Table(
   ],
 );
 
+pw.Widget _inspectionTable(PrintNode node, pw.TextStyle bold) => pw.Table(
+  border: pw.TableBorder.all(color: _line, width: 0.5),
+  columnWidths: const {
+    0: pw.FlexColumnWidth(2.4),
+    1: pw.FlexColumnWidth(3),
+    2: pw.FlexColumnWidth(1.6),
+    3: pw.FlexColumnWidth(2.4),
+  },
+  children: [
+    pw.TableRow(
+      decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF1F3F4)),
+      children: [
+        _cell('Узел', style: bold),
+        _cell('Состояние', style: bold),
+        _cell('Действие', style: bold),
+        _cell('Примечание', style: bold),
+      ],
+    ),
+    for (final item in node.inspection)
+      pw.TableRow(
+        children: [
+          _cell(item.name),
+          _cell(
+            item.isClean
+                ? 'Без замечаний'
+                : item.conditions.map((c) => c.label).join(', '),
+          ),
+          _cell(item.actions.map((a) => a.label).join(', ')),
+          _cell(item.note.trim()),
+        ],
+      ),
+  ],
+);
+
+List<pw.Widget> _gridTable(PrintGrid grid, pw.TextStyle bold) {
+  const small = pw.TextStyle(fontSize: 8);
+  return [
+    pw.Padding(
+      padding: const pw.EdgeInsets.only(top: 6, bottom: 2),
+      child: pw.Text(
+        grid.tolerance.isEmpty
+            ? grid.name
+            : '${grid.name} · допуск ${grid.tolerance}',
+        style: bold,
+      ),
+    ),
+    pw.Table(
+      border: pw.TableBorder.all(color: _line, width: 0.5),
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(
+            color: PdfColor.fromInt(0xFFF1F3F4),
+          ),
+          children: [
+            _cell('', style: small),
+            for (final column in grid.columns) _cell(column, style: small),
+            _cell('Овальн.', style: small),
+            _cell('Конусн.', style: small),
+            _cell('Оценка', style: small),
+          ],
+        ),
+        for (final row in grid.rows)
+          pw.TableRow(
+            children: [
+              _cell(row.label, style: small),
+              for (final value in row.cells) _cell(value, style: small),
+              _cell(row.ovality, style: small),
+              _cell(row.taper, style: small),
+              _cell(row.grade, style: small),
+            ],
+          ),
+      ],
+    ),
+    pw.SizedBox(height: 4),
+  ];
+}
+
 List<pw.Widget> _node(PrintNode node, Map<String, Uint8List> photos) {
   final bold = pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold);
   return [
@@ -163,6 +240,8 @@ List<pw.Widget> _node(PrintNode node, Map<String, Uint8List> photos) {
         padding: const pw.EdgeInsets.only(bottom: 6),
         child: pw.Text(node.remark),
       ),
+    if (node.inspection.isNotEmpty) _inspectionTable(node, bold),
+    for (final grid in node.grids) ..._gridTable(grid, bold),
     if (node.points.isNotEmpty)
       pw.Table(
         border: pw.TableBorder.all(color: _line, width: 0.5),
@@ -171,6 +250,7 @@ List<pw.Widget> _node(PrintNode node, Map<String, Uint8List> photos) {
           1: pw.FlexColumnWidth(2.4),
           2: pw.FlexColumnWidth(1.3),
           3: pw.FlexColumnWidth(1.4),
+          4: pw.FlexColumnWidth(1.2),
         },
         children: [
           pw.TableRow(
@@ -182,6 +262,7 @@ List<pw.Widget> _node(PrintNode node, Map<String, Uint8List> photos) {
               _cell('Допуск', style: bold),
               _cell('Замер', style: bold),
               _cell('Оценка', style: bold),
+              _cell('Деталь', style: bold),
             ],
           ),
           for (final point in node.points)
@@ -200,6 +281,7 @@ List<pw.Widget> _node(PrintNode node, Map<String, Uint8List> photos) {
                         : pw.FontWeight.normal,
                   ),
                 ),
+                _cell(point.grade),
               ],
             ),
         ],

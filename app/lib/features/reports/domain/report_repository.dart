@@ -1,7 +1,10 @@
 import 'dart:typed_data';
 
 import 'package:engineer/core/result.dart';
+import 'package:engineer/features/reports/domain/grid.dart';
+import 'package:engineer/features/reports/domain/inspection.dart';
 import 'package:engineer/features/reports/domain/report_models.dart';
+import 'package:engineer/features/reports/domain/tolerance.dart';
 
 /// Photo to attach or update.
 final class PhotoInput {
@@ -98,6 +101,69 @@ abstract interface class ReportRepository {
     String reportId,
     ReportStatus status,
   );
+
+  /// Fills [nodeId] with the typical inspection list of the unit type.
+  Future<Result<void, ReportFailure>> seedInspection(
+    String reportId,
+    String nodeId,
+    String unitType,
+  );
+
+  /// Adds the engineer's own line to the inspection sheet.
+  Future<Result<String, ReportFailure>> addInspectionItem(
+    String reportId,
+    String nodeId,
+    String name,
+  );
+
+  /// Stores the result of a line.
+  Future<Result<void, ReportFailure>> saveInspectionItem(
+    String reportId,
+    InspectionItem item,
+  );
+
+  /// Marks every line not yet inspected as "Без замечаний".
+  Future<Result<void, ReportFailure>> markRestClean(
+    String reportId,
+    String nodeId,
+  );
+
+  /// Stores the composition of the unit.
+  Future<Result<void, ReportFailure>> setComposition(
+    String reportId,
+    UnitComposition composition,
+  );
+
+  /// Adds a measurement grid to [nodeId].
+  Future<Result<String, ReportFailure>> addGrid(
+    String reportId,
+    String nodeId,
+    String name,
+    GridSpec grid,
+    Tolerance? tolerance,
+  );
+
+  /// Records a new reading of one grid cell.
+  Future<Result<void, ReportFailure>> addCellReading(
+    String reportId,
+    String pointId,
+    String cellKey,
+    String typed,
+  );
+
+  /// Chooses the verdict on [row] by hand; null returns to automatic.
+  Future<Result<void, ReportFailure>> setGrade(
+    String reportId,
+    String pointId,
+    int row,
+    PartGrade? grade,
+  );
+
+  /// Reads a remembered view choice.
+  Future<String?> readPreference(String key);
+
+  /// Remembers a view choice.
+  Future<void> writePreference(String key, String value);
 
   /// Directory for generated PDF files.
   String get exportsDirectory;

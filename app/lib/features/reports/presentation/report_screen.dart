@@ -4,11 +4,14 @@ import 'dart:io';
 import 'package:engineer/core/result.dart';
 import 'package:engineer/features/library/presentation/common_views.dart';
 import 'package:engineer/features/reports/application/report_providers.dart';
+import 'package:engineer/features/reports/domain/inspection.dart';
 import 'package:engineer/features/reports/domain/report_models.dart';
 import 'package:engineer/features/reports/domain/report_repository.dart';
 import 'package:engineer/features/reports/domain/report_templates.dart';
 import 'package:engineer/features/reports/domain/tolerance.dart';
 import 'package:engineer/features/reports/presentation/photo_annotate_screen.dart';
+import 'package:engineer/features/reports/presentation/grid_section.dart';
+import 'package:engineer/features/reports/presentation/inspection_section.dart';
 import 'package:engineer/features/reports/presentation/point_tile.dart';
 import 'package:engineer/features/reports/presentation/tolerance_badge.dart';
 import 'package:flutter/material.dart' hide Tolerance;
@@ -65,11 +68,14 @@ class ReportScreen extends ConsumerWidget {
                 padding: const EdgeInsetsDirectional.only(bottom: 120),
                 children: [
                   _HeaderCard(detail: detail),
+                  if (detail.header.unitType.toLowerCase().contains('двс'))
+                    CompositionCard(detail: detail),
                   for (final node in detail.nodes)
                     _NodeCard(
                       key: ValueKey(node.id),
                       header: detail.header,
                       node: node,
+                      composition: detail.composition,
                     ),
                 ],
               ),
@@ -82,6 +88,13 @@ class ReportScreen extends ConsumerWidget {
     WidgetRef ref,
     ReportDetail detail,
   ) async {
+    final missed = detail.nodes
+        .expand((n) => n.inspection)
+        .where((i) => !i.isInspected)
+        .map((i) => i.name)
+        .toList();
+    if (missed.isNotEmpty && !await confirmUninspected(context, missed)) return;
+    if (!context.mounted) return;
     final messenger = ScaffoldMessenger.of(context)
       ..showSnackBar(const SnackBar(content: Text('Формирую PDF…')));
     final result = await exportReportPdf(
@@ -284,10 +297,16 @@ class _HeaderCard extends StatelessWidget {
 }
 
 class _NodeCard extends ConsumerStatefulWidget {
-  const _NodeCard({required this.header, required this.node, super.key});
+  const _NodeCard({
+    required this.header,
+    required this.node,
+    required this.composition,
+    super.key,
+  });
 
   final ReportHeader header;
   final ReportNode node;
+  final UnitComposition? composition;
 
   @override
   ConsumerState<_NodeCard> createState() => _NodeCardState();
@@ -436,7 +455,7 @@ class _NodeCardState extends ConsumerState<_NodeCard> {
         : statuses.contains(ToleranceStatus.nearLimit)
         ? ToleranceStatus.nearLimit
         : null;
-    final measured = node.points.where((p) => p.latest != null).length;
+    final measured = node.points.where((p) => p.hasData).length;
     final subtitle = [
       if (node.procCode.isNotEmpty) node.procCode,
       if (node.points.isNotEmpty) 'замеры: $measured из ${node.points.length}',
@@ -457,17 +476,39 @@ class _NodeCardState extends ConsumerState<_NodeCard> {
         childrenPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 16),
         expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (inspectionNodeTitles.contains(node.title))
+            InspectionSection(
+              reportId: _reportId,
+              node: node,
+              unitType: widget.header.unitType,
+              isEditable: _editable,
+            ),
+          if (node.procKey.isNotEmpty && widget.header.manualId != null)
+            TorqueList(
+              unit: (
+                manualId: widget.header.manualId!,
+                unitCode: widget.header.unitCode,
+              ),
+              procKey: node.procKey,
+            ),
           for (final point in node.points)
             GestureDetector(
               onLongPress: _editable
                   ? () => unawaited(_remove(point.id, 'замер «${point.name}»'))
                   : null,
-              child: PointTile(
-                key: ValueKey(point.id),
-                reportId: _reportId,
-                point: point,
-                isEditable: _editable,
-              ),
+              child: point.grid != null
+                  ? MeasurementGridTile(
+                      key: ValueKey(point.id),
+                      reportId: _reportId,
+                      point: point,
+                      isEditable: _editable,
+                    )
+                  : PointTile(
+                      key: ValueKey(point.id),
+                      reportId: _reportId,
+                      point: point,
+                      isEditable: _editable,
+                    ),
             ),
           if (node.photos.isNotEmpty)
             SizedBox(
@@ -535,6 +576,13 @@ class _NodeCardState extends ConsumerState<_NodeCard> {
                   onPressed: () => unawaited(_addPoint()),
                   icon: const Icon(Icons.straighten),
                   label: const Text('Замер'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => unawaited(
+                    showAddGrid(context, ref, _reportId, node, widget.composition),
+                  ),
+                  icon: const Icon(Icons.grid_on),
+                  label: const Text('Сетка'),
                 ),
                 TextButton.icon(
                   onPressed: () => unawaited(_remove(node.id, 'узел «${node.title}»')),

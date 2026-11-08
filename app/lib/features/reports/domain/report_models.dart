@@ -1,3 +1,5 @@
+import 'package:engineer/features/reports/domain/grid.dart';
+import 'package:engineer/features/reports/domain/inspection.dart';
 import 'package:engineer/features/reports/domain/tolerance.dart';
 
 /// Kind of work a report covers; [code] is stored in the database.
@@ -173,10 +175,22 @@ final class MeasurementPoint {
     required this.name,
     required this.tolerance,
     required this.readings,
+    this.grid,
+    this.cellReadings = const {},
+    this.gradeOverrides = const {},
   });
 
   /// Record id.
   final String id;
+
+  /// Shape when this is a measurement grid.
+  final GridSpec? grid;
+
+  /// Readings of grid cells by [gridCellKey], newest first.
+  final Map<String, List<Reading>> cellReadings;
+
+  /// Grades chosen by hand, by row.
+  final Map<int, PartGrade> gradeOverrides;
 
   /// Parameter name.
   final String name;
@@ -190,10 +204,84 @@ final class MeasurementPoint {
   /// Reading that goes into the report.
   Reading? get latest => readings.isEmpty ? null : readings.first;
 
-  /// Status of [latest]; null when there is no reading.
+  /// Latest value of a grid cell.
+  double? cellValue(int row, int position, int direction) {
+    final list = cellReadings[gridCellKey(row, position, direction)];
+    return list == null || list.isEmpty ? null : list.first.value;
+  }
+
+  /// Values of one grid row as `[position][direction]`.
+  List<List<double?>> rowValues(int row) {
+    final shape = grid;
+    if (shape == null) return const [];
+    return [
+      for (var p = 0; p < shape.positions.length; p++)
+        [
+          for (var d = 0; d < shape.directions.length; d++)
+            cellValue(row, p, d),
+        ],
+    ];
+  }
+
+  /// Whether anything was measured.
+  bool get hasData => grid == null
+      ? latest != null
+      : cellReadings.values.any((list) => list.isNotEmpty);
+
+  /// Whether any value of [row] was measured.
+  bool rowHasData(int row) =>
+      rowValues(row).any((plane) => plane.any((v) => v != null));
+
+  /// Worst status over the readings; null when nothing was measured.
   ToleranceStatus? get status {
-    final value = latest?.value;
-    return value == null ? null : evaluateReading(value, tolerance);
+    final shape = grid;
+    if (shape == null) {
+      final value = latest?.value;
+      return value == null ? null : evaluateReading(value, tolerance);
+    }
+    final all = [
+      for (var r = 0; r < shape.rowCount; r++)
+        ...rowValues(r).expand((plane) => plane).whereType<double>(),
+    ].map((v) => evaluateReading(v, tolerance)).toSet();
+    if (all.isEmpty) return null;
+    for (final status in const [
+      ToleranceStatus.outside,
+      ToleranceStatus.nearLimit,
+      ToleranceStatus.within,
+    ]) {
+      if (all.contains(status)) return status;
+    }
+    return ToleranceStatus.noTolerance;
+  }
+
+  /// Automatic verdict on [row]; null without data or tolerance.
+  GradeResult? autoGrade(int row) {
+    final shape = grid;
+    if (shape == null) {
+      final value = latest?.value;
+      return value == null ? null : gradeReading(value, tolerance, const []);
+    }
+    GradeResult? worst;
+    for (final value in rowValues(row).expand((plane) => plane)) {
+      if (value != null) {
+        worst = worseGrade(
+          worst,
+          gradeReading(value, tolerance, shape.repairSteps),
+        );
+      }
+    }
+    return worst;
+  }
+
+  /// Verdict on [row]: chosen by hand, otherwise automatic.
+  GradeResult? gradeOf(int row) {
+    final auto = autoGrade(row);
+    final manual = gradeOverrides[row];
+    if (manual == null) return auto;
+    return (
+      grade: manual,
+      repairStep: manual == auto?.grade ? auto?.repairStep : null,
+    );
   }
 }
 
@@ -352,10 +440,18 @@ final class ReportNode {
     required this.remark,
     required this.points,
     required this.photos,
+    this.procKey = '',
+    this.inspection = const [],
   });
 
   /// Record id.
   final String id;
+
+  /// Procedure the node came from, may be empty.
+  final String procKey;
+
+  /// Lines of the inspection sheet; empty for other nodes.
+  final List<InspectionItem> inspection;
 
   /// Node title.
   final String title;
@@ -376,13 +472,24 @@ final class ReportNode {
   bool get hasContent =>
       remark.trim().isNotEmpty ||
       photos.isNotEmpty ||
-      points.any((p) => p.latest != null);
+      points.any((p) => p.hasData) ||
+      inspection.any((i) => i.isInspected);
 }
+
+/// Number of cylinders and main journals of a unit.
+typedef UnitComposition = ({int cylinders, int mains});
 
 /// Report with its content.
 final class ReportDetail {
   /// Creates a detail.
-  const ReportDetail({required this.header, required this.nodes});
+  const ReportDetail({
+    required this.header,
+    required this.nodes,
+    this.composition,
+  });
+
+  /// Composition of the unit; null until the engineer sets it.
+  final UnitComposition? composition;
 
   /// Header.
   final ReportHeader header;

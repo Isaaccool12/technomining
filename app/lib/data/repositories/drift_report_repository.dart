@@ -6,6 +6,8 @@ import 'package:engineer/core/clock.dart';
 import 'package:engineer/core/result.dart';
 import 'package:engineer/data/db/app_database.dart';
 import 'package:engineer/data/repositories/record_stamper.dart';
+import 'package:engineer/features/reports/domain/grid.dart';
+import 'package:engineer/features/reports/domain/inspection.dart';
 import 'package:engineer/features/reports/domain/report_models.dart';
 import 'package:engineer/features/reports/domain/report_repository.dart';
 import 'package:engineer/features/reports/domain/report_templates.dart';
@@ -73,7 +75,7 @@ final class DriftReportRepository implements ReportRepository {
       summaries.add(
         ReportSummary(
           header: detail.header,
-          measured: points.where((pt) => pt.latest != null).length,
+          measured: points.where((pt) => pt.hasData).length,
           outside: points
               .where((pt) => pt.status == ToleranceStatus.outside)
               .length,
@@ -141,7 +143,21 @@ final class DriftReportRepository implements ReportRepository {
         if (record.kind == 'node')
           _node(record, children[record.id] ?? const [], readings),
     ];
-    return ReportDetail(header: _header(row), nodes: nodes);
+    UnitComposition? composition;
+    for (final record in records) {
+      if (record.kind != 'inspected' || record.parentRecordId != null) continue;
+      final payload = _payload(record);
+      final cylinders = payload['cylinders'];
+      final mains = payload['mains'];
+      if (cylinders is int && mains is int) {
+        composition = (cylinders: cylinders, mains: mains);
+      }
+    }
+    return ReportDetail(
+      header: _header(row),
+      nodes: nodes,
+      composition: composition,
+    );
   }
 
   ReportNode _node(
@@ -155,11 +171,16 @@ final class DriftReportRepository implements ReportRepository {
       id: record.id,
       title: _text(payload, 'title'),
       procCode: _text(payload, 'procCode'),
+      procKey: _text(payload, 'procKey'),
+      inspection: [
+        for (final child in children)
+          if (child.kind == 'inspected') _inspectionItem(child),
+      ],
       remark: remarks.isEmpty ? '' : _text(_payload(remarks.last), 'text'),
       points: [
         for (final child in children)
           if (child.kind == 'measurement')
-            _point(child, readings[child.id] ?? const []),
+            _point(child, readings),
       ],
       photos: [
         for (final child in children)
@@ -168,9 +189,49 @@ final class DriftReportRepository implements ReportRepository {
     );
   }
 
-  MeasurementPoint _point(ReportRecordRow record, List<Reading> readings) {
+  InspectionItem _inspectionItem(ReportRecordRow record) {
     final payload = _payload(record);
+    final conditions = payload['cond'];
+    final actions = payload['act'];
+    return InspectionItem(
+      id: record.id,
+      name: _text(payload, 'name'),
+      isStandard: payload['std'] == true,
+      isClean: payload['clean'] == true,
+      note: _text(payload, 'note'),
+      conditions: {
+        for (final c in InspectionCondition.values)
+          if (conditions is List<dynamic> && conditions.contains(c.code)) c,
+      },
+      actions: {
+        for (final a in InspectionAction.values)
+          if (actions is List<dynamic> && actions.contains(a.code)) a,
+      },
+    );
+  }
+
+  MeasurementPoint _point(
+    ReportRecordRow record,
+    Map<String, List<Reading>> allReadings,
+  ) {
+    final payload = _payload(record);
+    final readings = allReadings[record.id] ?? const <Reading>[];
+    final prefix = '${record.id}|';
+    final cells = <String, List<Reading>>{
+      for (final entry in allReadings.entries)
+        if (entry.key.startsWith(prefix))
+          entry.key.substring(prefix.length): entry.value,
+    };
+    final grades = payload['grades'];
     return MeasurementPoint(
+      grid: GridSpec.fromJson(payload['grid']),
+      cellReadings: cells,
+      gradeOverrides: {
+        if (grades is Map<String, dynamic>)
+          for (final entry in grades.entries)
+            if (int.tryParse(entry.key) case final row?)
+              if (PartGrade.tryCode(entry.value) case final grade?) row: grade,
+      },
       id: record.id,
       name: _text(payload, 'name'),
       tolerance: Tolerance(
@@ -328,9 +389,174 @@ final class DriftReportRepository implements ReportRepository {
       for (final name in template.trailingNodes) {
         await _insertNode(reportId, name, null);
       }
+      await _seedNewReport(reportId, unit?.unitType ?? '');
       return reportId;
     });
   }
+
+  Future<void> _seedNewReport(String reportId, String unitType) async {
+    final query = _db.select(_db.reportRecords)
+      ..where((r) => r.reportId.equals(reportId) & r.kind.equals('node'));
+    for (final node in await query.get()) {
+      if (inspectionNodeTitles.contains(_text(_payload(node), 'title'))) {
+        await _insertInspection(reportId, node.id, unitType);
+      }
+    }
+  }
+
+  Future<void> _insertInspection(
+    String reportId,
+    String nodeId,
+    String unitType,
+  ) async {
+    for (final name in inspectionListFor(unitType)) {
+      await _insertRecord(reportId, 'inspected', {
+        'name': name,
+        'std': true,
+      }, parentId: nodeId);
+    }
+  }
+
+  @override
+  Future<Result<void, ReportFailure>> seedInspection(
+    String reportId,
+    String nodeId,
+    String unitType,
+  ) => _edit(reportId, () => _insertInspection(reportId, nodeId, unitType));
+
+  @override
+  Future<Result<String, ReportFailure>> addInspectionItem(
+    String reportId,
+    String nodeId,
+    String name,
+  ) => _edit(
+    reportId,
+    () => _insertRecord(reportId, 'inspected', {
+      'name': name,
+      'std': false,
+    }, parentId: nodeId),
+  );
+
+  @override
+  Future<Result<void, ReportFailure>> saveInspectionItem(
+    String reportId,
+    InspectionItem item,
+  ) => _edit(
+    reportId,
+    () => _updateRecord(reportId, item.id, (old) => {
+      ...old,
+      'name': item.name,
+      'clean': item.isClean,
+      'cond': item.conditions.map((c) => c.code).toList(),
+      'act': item.actions.map((a) => a.code).toList(),
+      'note': item.note,
+    }),
+  );
+
+  @override
+  Future<Result<void, ReportFailure>> markRestClean(
+    String reportId,
+    String nodeId,
+  ) => _edit(reportId, () async {
+    final query = _db.select(_db.reportRecords)
+      ..where(
+        (r) =>
+            r.parentRecordId.equals(nodeId) &
+            r.kind.equals('inspected') &
+            r.isDeleted.equals(false),
+      );
+    for (final row in await query.get()) {
+      if (_inspectionItem(row).isInspected) continue;
+      await _updateRecord(reportId, row.id, (old) => {...old, 'clean': true});
+    }
+  });
+
+  @override
+  Future<Result<void, ReportFailure>> setComposition(
+    String reportId,
+    UnitComposition composition,
+  ) => _edit(reportId, () async {
+    final query = _db.select(_db.reportRecords)
+      ..where(
+        (r) =>
+            r.reportId.equals(reportId) &
+            r.kind.equals('inspected') &
+            r.parentRecordId.isNull() &
+            r.isDeleted.equals(false),
+      );
+    final existing = await query.get();
+    final payload = {
+      'cylinders': composition.cylinders,
+      'mains': composition.mains,
+    };
+    if (existing.isEmpty) {
+      await _insertRecord(reportId, 'inspected', payload);
+    } else {
+      await _updateRecord(reportId, existing.first.id, (_) => payload);
+    }
+  });
+
+  @override
+  Future<Result<String, ReportFailure>> addGrid(
+    String reportId,
+    String nodeId,
+    String name,
+    GridSpec grid,
+    Tolerance? tolerance,
+  ) => _edit(
+    reportId,
+    () => _insertRecord(reportId, 'measurement', {
+      'name': name,
+      'unit': tolerance?.unit ?? 'мм',
+      if (tolerance?.nominal != null) 'nom': tolerance?.nominal,
+      if (tolerance?.min != null) 'min': tolerance?.min,
+      if (tolerance?.max != null) 'max': tolerance?.max,
+      if (tolerance?.limit != null) 'limit': tolerance?.limit,
+      'grid': grid.toJson(),
+    }, parentId: nodeId),
+  );
+
+  @override
+  Future<Result<void, ReportFailure>> addCellReading(
+    String reportId,
+    String pointId,
+    String cellKey,
+    String typed,
+  ) => addReading(reportId, '$pointId|$cellKey', typed);
+
+  @override
+  Future<Result<void, ReportFailure>> setGrade(
+    String reportId,
+    String pointId,
+    int row,
+    PartGrade? grade,
+  ) => _edit(
+    reportId,
+    () => _updateRecord(reportId, pointId, (old) {
+      final grades = <String, Object?>{
+        if (old['grades'] case final Map<String, dynamic> map) ...map,
+      };
+      if (grade == null) {
+        grades.remove('$row');
+      } else {
+        grades['$row'] = grade.code;
+      }
+      return {...old, 'grades': grades};
+    }),
+  );
+
+  @override
+  Future<String?> readPreference(String key) async {
+    final query = _db.select(_db.appSettings)..where((s) => s.key.equals(key));
+    return (await query.getSingleOrNull())?.value;
+  }
+
+  @override
+  Future<void> writePreference(String key, String value) => _db
+      .into(_db.appSettings)
+      .insertOnConflictUpdate(
+        AppSettingsCompanion.insert(key: key, value: value),
+      );
 
   Future<String> _insertNode(
     String reportId,

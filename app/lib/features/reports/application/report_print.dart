@@ -1,3 +1,5 @@
+import 'package:engineer/features/reports/domain/grid.dart';
+import 'package:engineer/features/reports/domain/inspection.dart';
 import 'package:engineer/features/reports/domain/report_models.dart';
 import 'package:engineer/features/reports/domain/tolerance.dart';
 import 'package:intl/intl.dart';
@@ -11,6 +13,24 @@ typedef PrintPoint = ({
   String tolerance,
   String value,
   ToleranceStatus status,
+  String grade,
+});
+
+/// Row of a printed grid: only measured rows are kept.
+typedef PrintGridRow = ({
+  String label,
+  List<String> cells,
+  String ovality,
+  String taper,
+  String grade,
+});
+
+/// Measurement grid as printed.
+typedef PrintGrid = ({
+  String name,
+  String tolerance,
+  List<String> columns,
+  List<PrintGridRow> rows,
 });
 
 /// Node as printed: only what was filled in.
@@ -22,7 +42,15 @@ final class PrintNode {
     required this.remark,
     required this.points,
     required this.photos,
+    this.grids = const [],
+    this.inspection = const [],
   });
+
+  /// Grids with a measured row.
+  final List<PrintGrid> grids;
+
+  /// Inspected lines only.
+  final List<InspectionItem> inspection;
 
   /// Node title.
   final String title;
@@ -95,7 +123,26 @@ PrintReport printableReport(ReportDetail detail) {
   for (final node in detail.nodes) {
     if (!node.hasContent) continue;
     final points = <PrintPoint>[];
+    final grids = <PrintGrid>[];
     for (final point in node.points) {
+      final shape = point.grid;
+      if (shape != null) {
+        final printed = _printGrid(point, shape);
+        if (printed != null) grids.add(printed);
+        for (var r = 0; r < shape.rowCount; r++) {
+          outside += point
+              .rowValues(r)
+              .expand((plane) => plane)
+              .whereType<double>()
+              .where(
+                (v) =>
+                    evaluateReading(v, point.tolerance) ==
+                    ToleranceStatus.outside,
+              )
+              .length;
+        }
+        continue;
+      }
       final reading = point.latest;
       final value = reading?.value;
       final status = point.status;
@@ -109,6 +156,7 @@ PrintReport printableReport(ReportDetail detail) {
             ? formatDecimal(value)
             : '${formatDecimal(value)} $unit',
         status: status,
+        grade: _gradeText(point.gradeOf(0)),
       ));
     }
     nodes.add(
@@ -118,6 +166,8 @@ PrintReport printableReport(ReportDetail detail) {
         remark: node.remark.trim(),
         points: points,
         photos: node.photos,
+        grids: grids,
+        inspection: node.inspection.where((i) => i.isInspected).toList(),
       ),
     );
   }
@@ -126,5 +176,39 @@ PrintReport printableReport(ReportDetail detail) {
     fields: fields,
     nodes: nodes,
     outsideCount: outside,
+  );
+}
+
+String _gradeText(GradeResult? grade) =>
+    grade == null ? '' : gradeLabel(grade);
+
+String _number(double? value) => value == null ? '' : formatDecimal(value);
+
+PrintGrid? _printGrid(MeasurementPoint point, GridSpec shape) {
+  final rows = <PrintGridRow>[];
+  for (var r = 0; r < shape.rowCount; r++) {
+    if (!point.rowHasData(r)) continue;
+    final values = point.rowValues(r);
+    final derived = rowDerived(values, shape.directions.length);
+    rows.add((
+      label: '${shape.rowLabel} ${r + 1}',
+      cells: [
+        for (final plane in values)
+          for (final value in plane) _number(value),
+      ],
+      ovality: _number(derived.ovality),
+      taper: _number(derived.taper),
+      grade: _gradeText(point.gradeOf(r)),
+    ));
+  }
+  if (rows.isEmpty) return null;
+  return (
+    name: point.name,
+    tolerance: describeTolerance(point.tolerance),
+    columns: [
+      for (final position in shape.positions)
+        for (final direction in shape.directions) '$position $direction',
+    ],
+    rows: rows,
   );
 }

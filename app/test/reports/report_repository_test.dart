@@ -11,6 +11,8 @@ import 'package:engineer/data/repositories/drift_library_repository.dart';
 import 'package:engineer/data/repositories/drift_report_repository.dart';
 import 'package:engineer/features/reports/application/report_pdf.dart';
 import 'package:engineer/features/reports/application/report_print.dart';
+import 'package:engineer/features/reports/domain/grid.dart';
+import 'package:engineer/features/reports/domain/inspection.dart';
 import 'package:engineer/features/reports/domain/report_models.dart';
 import 'package:engineer/features/reports/domain/report_repository.dart';
 import 'package:engineer/features/reports/domain/tolerance.dart';
@@ -190,6 +192,67 @@ void main() {
     expect(point.readings, hasLength(2));
     expect(point.latest?.valueText, '169.99');
     expect(point.status, ToleranceStatus.within);
+  });
+
+  test('inspection sheet is seeded, marked and printed when inspected', () async {
+    var detail = await createFull();
+    final id = detail.header.id;
+    final node = detail.nodes.first;
+    expect(node.inspection, isNotEmpty);
+    expect(node.inspection.every((i) => i.isStandard), isTrue);
+    final first = node.inspection.first;
+    await reports.saveInspectionItem(
+      id,
+      InspectionItem(
+        id: first.id,
+        name: first.name,
+        isStandard: true,
+        conditions: const {InspectionCondition.crack},
+        actions: const {InspectionAction.replace},
+      ),
+    );
+    detail = (await reports.watchReport(id).first)!;
+    expect(printableReport(detail).nodes.first.inspection, hasLength(1));
+    await reports.markRestClean(id, node.id);
+    detail = (await reports.watchReport(id).first)!;
+    final items = detail.nodes.first.inspection;
+    expect(items.first.conditions, {InspectionCondition.crack});
+    expect(items.skip(1).every((i) => i.isClean), isTrue);
+  });
+
+  test('grid keeps cells, derives grades and honours a manual one', () async {
+    var detail = await createFull();
+    final id = detail.header.id;
+    final nodeId = detail.nodes[1].id;
+    await reports.setComposition(id, (cylinders: 6, mains: 7));
+    final added = await reports.addGrid(
+      id,
+      nodeId,
+      'Коренная шейка',
+      GridPreset.mainJournal.spec(6, 7),
+      const Tolerance(unit: 'мм', nominal: 110, min: 109.98, max: 110),
+    );
+    final pointId = (added as Ok<String, ReportFailure>).value;
+    await reports.addCellReading(id, pointId, gridCellKey(0, 0, 0), '109,8');
+    await reports.addCellReading(id, pointId, gridCellKey(0, 0, 1), '109,99');
+    detail = (await reports.watchReport(id).first)!;
+    expect(detail.composition?.mains, 7);
+    var point = detail.nodes[1].points.single;
+    expect(point.grid?.rowCount, 7);
+    expect(point.autoGrade(0)?.grade, PartGrade.repair);
+    expect(point.autoGrade(0)?.repairStep, 0.25);
+    expect(point.status, ToleranceStatus.outside);
+    final grid = printableReport(detail).nodes
+        .expand((n) => n.grids)
+        .single;
+    expect(grid.rows, hasLength(1));
+    await reports.setGrade(id, pointId, 0, PartGrade.replace);
+    detail = (await reports.watchReport(id).first)!;
+    point = detail.nodes[1].points.single;
+    expect(point.gradeOf(0)?.grade, PartGrade.replace);
+    await reports.setGrade(id, pointId, 0, null);
+    detail = (await reports.watchReport(id).first)!;
+    expect(detail.nodes[1].points.single.gradeOf(0)?.grade, PartGrade.repair);
   });
 
   test('a report under review is locked', () async {
