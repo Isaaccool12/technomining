@@ -1,0 +1,83 @@
+name: Сборка APK
+
+# Flutter-приложение (app/) → тестовый APK с отладочной подписью.
+# Результат — раздел Artifacts на странице запуска.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: build-apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.38.x
+          cache: true
+      - name: SQLite для тестов
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libsqlite3-dev
+      - name: Платформенная папка Android
+        run: |
+          if [ ! -d android ]; then
+            flutter create --platforms android --org ru.technomining --project-name engineer .
+          fi
+          sed -i 's/android:label="[^"]*"/android:label="ТехноМайнинг"/' android/app/src/main/AndroidManifest.xml
+      - name: Зависимости
+        run: flutter pub get
+      - name: Генерация кода
+        run: |
+          flutter gen-l10n
+          dart run build_runner build --delete-conflicting-outputs
+      - name: Форматирование (пока только отчёт)
+        continue-on-error: true
+        run: dart format --output=none --set-exit-if-changed lib test
+      - name: Анализ
+        run: flutter analyze --fatal-infos
+      - name: Тесты
+        run: flutter test --test-randomize-ordering-seed random
+      - name: Постоянный отладочный ключ
+        # Один ключ на все сборки, чтобы новые тестовые APK ставились поверх.
+        run: |
+          mkdir -p ~/.android
+          cp ci/debug.keystore ~/.android/debug.keystore
+      - name: Сборка APK
+        run: |
+          NAME="0.4.${GITHUB_RUN_NUMBER}-test"
+          CODE=$((4 + GITHUB_RUN_NUMBER))
+          flutter build apk --release --build-name="$NAME" --build-number="$CODE"
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/engineer-$NAME.apk"
+          (cd dist && sha256sum "engineer-$NAME.apk" | tee "engineer-$NAME.apk.sha256")
+          echo "APK_NAME=$NAME" >> "$GITHUB_ENV"
+          { echo "### engineer-$NAME.apk"; echo; echo '```'; cat "dist/engineer-$NAME.apk.sha256"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: engineer-${{ env.APK_NAME }}.apk
+          path: |
+            app/dist/*.apk
+            app/dist/*.sha256
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pubspec-lock
+          path: app/pubspec.lock
+          retention-days: 30

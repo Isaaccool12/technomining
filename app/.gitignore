@@ -1,0 +1,11 @@
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.idea/
+*.iml
+build/
+# Платформенная папка создаётся в CI командой flutter create.
+android/
+# Сгенерированный код (build_runner, gen-l10n) создаётся в CI.
+*.g.dart
+lib/l10n/gen/

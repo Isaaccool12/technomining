@@ -1,0 +1,15 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-raw-types: true
+  exclude:
+    - "**/*.g.dart"
+    - "lib/l10n/gen/**"
+    - "android/**"
+
+linter:
+  rules:
+    # Код пишется без локального форматтера; длину строк проверяет dart format.
+    lines_longer_than_80_chars: false
