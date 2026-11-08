@@ -28,6 +28,11 @@ dependencies:
   uuid: ^4.5.1
   webview_flutter: ^4.13.0
 
+# image (через pdf) вызывает ZLibDecoder.decodeLazy из новых версий archive,
+# а решатель оставлял archive 4.0.9. Поднимаем archive принудительно.
+dependency_overrides:
+  archive: ^4.0.10
+
 dev_dependencies:
   build_runner: ^2.5.0
   drift_dev: ^2.28.0
