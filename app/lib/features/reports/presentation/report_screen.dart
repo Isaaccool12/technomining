@@ -47,6 +47,7 @@ class ReportScreen extends ConsumerWidget {
       ),
       floatingActionButton: detail != null && detail.header.status.isEditable
           ? FloatingActionButton.extended(
+              heroTag: 'add-node',
               onPressed: () => unawaited(_addNode(context, ref, detail)),
               icon: const Icon(Icons.add),
               label: const Text('Узел'),

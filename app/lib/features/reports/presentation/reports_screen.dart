@@ -19,6 +19,7 @@ class ReportsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Отчёты')),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'new-report',
         onPressed: () => context.push('/reports/new'),
         icon: const Icon(Icons.add),
         label: const Text('Новый отчёт'),
