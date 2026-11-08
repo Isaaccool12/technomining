@@ -46,7 +46,7 @@ jobs:
       - name: Генерация кода
         run: |
           flutter gen-l10n
-          dart run build_runner build --delete-conflicting-outputs
+          dart run build_runner build --force-jit --delete-conflicting-outputs
       - name: Форматирование (пока только отчёт)
         continue-on-error: true
         run: dart format --output=none --set-exit-if-changed lib test
