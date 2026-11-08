@@ -12,8 +12,8 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final theme =
-        ref.watch(themeChoiceProvider).value ?? ref.watch(initialThemeProvider);
+    final initial = ref.watch(initialThemeProvider);
+    final theme = ref.watch(themeChoiceProvider).value ?? initial;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsAction)),
       body: ListView(

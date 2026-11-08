@@ -30,7 +30,7 @@ class AppDatabase extends _$AppDatabase {
     onCreate: (migrator) async {
       await migrator.createAll();
       await customStatement(
-        'CREATE VIRTUAL TABLE procedure_fts USING fts5('
+        'CREATE VIRTUAL TABLE procedure_fts USING fts5( '
         "title, body, content='', contentless_delete=1, "
         "tokenize='unicode61 remove_diacritics 2')",
       );

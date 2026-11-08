@@ -111,7 +111,7 @@ final class DriftLibraryRepository implements LibraryRepository {
 
   Future<void> _deleteManual(String manualId) async {
     await _db.customStatement(
-      'DELETE FROM procedure_fts WHERE rowid IN ('
+      'DELETE FROM procedure_fts WHERE rowid IN ( '
       'SELECT d.doc_id FROM procedure_search_docs d '
       'JOIN procedures p ON p.id = d.procedure_id WHERE p.manual_id = ?)',
       [manualId],

@@ -62,9 +62,8 @@ File _writePack(Directory dir, {String body = 'Снятие подшипнико
   );
   _add(archive, 'img/ab12.webp', [1, 2, 3]);
   _add(archive, '../evil.html', [1]);
-  final file = File(p.join(dir.path, 'pack.zip'));
-  file.writeAsBytesSync(ZipEncoder().encode(archive));
-  return file;
+  return File(p.join(dir.path, 'pack.zip'))
+    ..writeAsBytesSync(ZipEncoder().encode(archive));
 }
 
 void main() {

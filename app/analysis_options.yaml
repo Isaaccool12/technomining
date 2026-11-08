@@ -13,3 +13,5 @@ linter:
   rules:
     # Код пишется без локального форматтера; длину строк проверяет dart format.
     lines_longer_than_80_chars: false
+    # Тип провайдера Riverpod выводится из конструктора; его явная запись — шум.
+    specify_nonobvious_property_types: false

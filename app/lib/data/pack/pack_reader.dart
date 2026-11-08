@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
-import 'dart:typed_data';
 
 import 'package:archive/archive_io.dart';
 import 'package:engineer/core/result.dart';
@@ -133,10 +132,10 @@ Future<Result<ParsedPack, ImportFailure>> _readPack(
     return await _unpack(archive, rootPath);
   } on FileSystemException {
     return const Err(ImportFailure.storage);
-  } on FormatException {
-    return const Err(ImportFailure.badFormat);
   } on ArchiveException {
     return const Err(ImportFailure.notZip);
+  } on FormatException {
+    return const Err(ImportFailure.badFormat);
   } finally {
     await input.close();
   }
@@ -211,7 +210,7 @@ Future<List<String>> _storeFiles(
 }
 
 Future<void> _write(ArchiveFile entry, String path) async {
-  final Uint8List? bytes = entry.readBytes();
+  final bytes = entry.readBytes();
   if (bytes != null) await File(path).writeAsBytes(bytes, flush: true);
 }
 

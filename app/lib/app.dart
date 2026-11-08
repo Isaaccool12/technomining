@@ -89,8 +89,8 @@ class _EngineerAppState extends ConsumerState<EngineerApp> {
 
   @override
   Widget build(BuildContext context) {
-    final choice =
-        ref.watch(themeChoiceProvider).value ?? ref.watch(initialThemeProvider);
+    final initial = ref.watch(initialThemeProvider);
+    final choice = ref.watch(themeChoiceProvider).value ?? initial;
     return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       theme: _buildTheme(Brightness.light),
