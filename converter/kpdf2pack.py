@@ -805,7 +805,18 @@ def main():
                         for m in TQ_BARE.finditer(t_):
                             lab = next((x for rr_, cc_, x in ct if rr_ <= r0 and cc_ < c0 and x and not TQ_BARE.search(x)), '')
                             tq.append({'nm': m.group(1) + ('–' + m.group(2) if m.group(2) else ''), 'kgm': m.group(3), 'op': clean_op(lab) or 'по таблице', 'stage': 'таблица', 'anchor': aid, 'page': pn})
-        ftxt = ' '.join(l.text for l in L_.get('fig_text', []))
+        # подписи на рисунке: «98 – 123 Нм» и строкой ниже «{10 – 12,5 кгм}» — собрать в пары по положению
+        fl = L_.get('fig_text', [])
+        used_, parts_ = set(), []
+        for i_, l_ in enumerate(fl):
+            t_ = l_.text.strip()
+            if re.search(r'Нм|Nm|N·m', t_) and not re.search(r'кгм|kgm', t_):
+                cand = [(j_, m_) for j_, m_ in enumerate(fl) if j_ not in used_ and j_ != i_ and re.search(r'кгм|kgm', m_.text) and 0 <= m_.y0 - l_.y0 <= 16 and min(l_.x1, m_.x1) - max(l_.x0, m_.x0) > -4]
+                if cand:
+                    j_, m_ = min(cand, key=lambda c: (c[1].y0 - l_.y0) + abs(c[1].x0 - l_.x0) / 10)
+                    used_ |= {i_, j_}; parts_.append(t_ + ' ' + m_.text.strip()); continue
+            if i_ not in used_: parts_.append(t_)
+        ftxt = ' '.join(x for x in parts_ if not (re.search(r'кгм|kgm', x) and not re.search(r'Нм|Nm|N·m', x)) or True)
         if ftxt:
             fa = next((aid for kind, aid, _, _ in L_['items'] if kind == 'fig'), None)
             for m in TQ_BARE.finditer(K.fix_dash(ftxt)):

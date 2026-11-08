@@ -20,6 +20,7 @@ TEXT_MARK = {'\\⌧': 'tq', '⌧': 'tq'}
 STEP_RX = re.compile(r'^(\d{1,2}[.)]|[a-zа-я]\))\s+')
 BUL_RX = re.compile(r'^[•·–\-]\s+')
 REF_RX = re.compile(r'^\[\*\d+\]')
+LEAD_RX = re.compile(r'\s*[.…]{5,}\s*([\w\-./() ]{1,24}?)\s*[●○]?\s*$')
 NUM = r'\d+(?:[.,]\d+)?'
 NMU, KGMU = r'(?:Нм|Н·м|Nm|N·m|N\.m)', r'(?:кгм|kgm|kgf·m)'
 TQ_RX = re.compile(r'(?:^|\s)([^:]{3,90}?):\s*(' + NUM + r')\s*(?:[-–]\s*(' + NUM + r'))?\s*' + NMU + r'\s*(?:\{\s*([^}]*' + KGMU + r')\s*\})?')
@@ -112,6 +113,16 @@ def page_lines(p, fx, hdr, ftr):
                 ln = Line((bb.x0, bb.y0, bb.x1, bb.y1), spans, icon, only_icon=not txt, sx=sx)
                 if icon: ln.icon_x0 = (ib or bb).x0
                 out.append(ln)
+    # слова одной строки, разнесённые выравниванием по ширине, — в одну строку
+    out.sort(key=lambda l: (round(l.y0), l.x0))
+    mid = p.rect.width / 2 if p.rect.height > p.rect.width else -1e9
+    merged = []
+    for l in out:
+        q = merged[-1] if merged else None
+        if q and not q.only_icon and not l.only_icon and not l.icon and abs(q.y0 - l.y0) < 1.5 and abs(q.y1 - l.y1) < 1.5 and 0 <= l.x0 - q.x1 < 16 and not (q.x1 <= mid + 3 and l.x0 >= mid - 3):
+            q.spans = q.spans + [[' ', False, l.size]] + l.spans; q.sx = q.sx + [(q.x1, l.x0)] + l.sx; q.x1 = l.x1
+        else: merged.append(l)
+    out = merged
     # надстрочные цифры (см², м³) — к строке слева
     SUP = str.maketrans('0123456789', '⁰¹²³⁴⁵⁶⁷⁸⁹')
     big = [l.size for l in out if l.size]
@@ -135,7 +146,8 @@ def page_lines(p, fx, hdr, ftr):
     for ic in icons:
         target = ic.y0 + 0.53 * (ic.y1 - ic.y0)
         cand = [t for t in texts if ic.x1 - 4 <= t.x0 <= ic.x1 + 45 and abs(t.y0 - target) < 9 and not t.icon]
-        if not cand: continue
+        if not cand:   # значок сам по себе (например, в таблице условных обозначений) — оставить символом
+            texts.append(Line((ic.x0, ic.y0, ic.x1, ic.y1), [[ICON_SYM[ic.icon], False, 12]], sx=[(ic.x0, ic.x1)])); continue
         t = min(cand, key=lambda t: (abs(t.y0 - target), t.x0))
         t.icon, t.icon_x0 = ic.icon, ic.x0
     return texts
@@ -247,7 +259,7 @@ def grids(H, V):
             for c in range(C):
                 k = uf2.f(r * C + c); a = cells.get(k)
                 cells[k] = (r, c, r + 1, c + 1) if a is None else (min(a[0], r), min(a[1], c), max(a[2], r + 1), max(a[3], c + 1))
-        out.append({'xs': xs, 'ys': ys, 'cells': sorted(set(cells.values())), 'rect': fitz.Rect(xs[0], ys[0], xs[-1], ys[-1]), 'vat': vat})
+        out.append({'xs': xs, 'ys': ys, 'cells': sorted(set(cells.values())), 'rect': fitz.Rect(xs[0], ys[0], xs[-1], ys[-1]), 'vat': vat, 'hat': hat})
     return out
 
 
@@ -259,10 +271,12 @@ def _join(parts):
         spans = [list(s) for s in spans]
         if not spans: continue
         if out:
-            prev = out[-1][0]
+            k_ = len(out) - 1
+            while k_ > 0 and not out[k_][0].strip(): k_ -= 1
+            prev = out[k_][0]
             first = spans[0][0].lstrip()
             if re.search(r'[A-Za-zА-Яа-яЁё]-\s*$', prev) and first[:1].islower():
-                out[-1][0] = re.sub(r'-\s*$', '', prev); spans[0][0] = first
+                out[k_][0] = re.sub(r'-\s*$', '', prev); del out[k_ + 1:]; spans[0][0] = first
             elif not prev.endswith(' ') and not first.startswith(' '):
                 spans[0][0] = ' ' + spans[0][0]
         out.extend(spans)
@@ -292,7 +306,7 @@ def paragraphs(lines, x_base=None, cell=False):
         txt = ln.text.strip()
         if not txt and not ln.icon: continue
         lx0 = ln.icon_x0 if ln.icon_x0 is not None else ln.x0
-        new = cur is None or ln.icon is not None or bool(STEP_RX.match(txt)) or bool(BUL_RX.match(txt)) or bool(REF_RX.match(txt))
+        new = cur is None or ln.icon is not None or bool(STEP_RX.match(txt)) or bool(BUL_RX.match(txt)) or bool(REF_RX.match(txt)) or (cur is not None and bool(LEAD_RX.search(cur['text'])))
         if cur and not new:
             last = cur['last']
             gap = ln.y0 - last.y1
@@ -322,6 +336,9 @@ def para_html(p, pid, body_size=9.5):
         return f'<p{idattr} class="kp-{kind}{lc}"><span class="kp-ic">{ICON_SYM[kind]}</span>{inner}</p>'
     if p['bold'] and p['size'] >= body_size + 2.5:
         return f'<h3{idattr} class="kp-h">{inner}</h3>'
+    ml = LEAD_RX.search(t)
+    if ml and ml.end() == len(t):   # строка содержания «Название ........ SRU05900-01»
+        return f'<p{idattr} class="kp-toc{lc}"><span>{esc(t[:ml.start()].strip())}</span><span class="kp-toc-n">{esc(ml.group(1))}</span></p>'
     m = STEP_RX.match(t)
     if m and not p['bold']:
         n = m.group(1); rest = _spans_html(_strip_prefix(p['spans'], m.end()))
@@ -352,7 +369,7 @@ def cell_html(lines):
     return ''.join(para_html(p, None).replace(' class="kp-sub', ' class="kp-cb') for p in ps)
 
 
-def table_from_grid(g, lines):
+def table_from_grid(g, lines, figs=()):
     """Сетка + строки текста → (html, text, rows), rows — список (y0, y1, [тексты ячеек])."""
     xs, ys, cells = g['xs'], g['ys'], g['cells']
     rects = [fitz.Rect(xs[c0], ys[r0], xs[c1], ys[r1]) for r0, c0, r1, c1 in cells]
@@ -363,6 +380,11 @@ def table_from_grid(g, lines):
         if k is None:
             k = min(range(len(rects)), key=lambda i: abs(rects[i].x0 - ln.x0) + abs((rects[i].y0 + rects[i].y1) / 2 - ln.yc)) if rects else None
         if k is not None: content[k].append(ln)
+    fig_in = {i: [] for i in range(len(cells))}
+    for r, name in figs:
+        pt = fitz.Point((r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2)
+        k = next((i for i, rc in enumerate(rects) if rc.contains(pt)), None)
+        if k is not None: fig_in[k].append(f'<img class="kp-cimg" src="{name}" alt="" style="width:{max(18, round(r.width * 2))}px">')
     R = len(ys) - 1
     start = {}
     for i, (r0, c0, r1, c1) in enumerate(cells): start.setdefault(r0, []).append((c0, i))
@@ -374,7 +396,7 @@ def table_from_grid(g, lines):
         for c0, i in sorted(start.get(r, [])):
             r0, _, r1, c1 = cells[i]
             a = (f' rowspan="{r1 - r0}"' if r1 - r0 > 1 else '') + (f' colspan="{c1 - c0}"' if c1 - c0 > 1 else '')
-            h = cell_html(content[i])
+            h = ''.join(fig_in[i]) + cell_html(content[i])
             tds.append(f'<td{a}>{h}</td>')
             t = ' '.join(l.text.strip() for l in sorted(content[i], key=lambda l: (round(l.y0), l.x0)))
             if t: texts.append(t)
@@ -412,6 +434,8 @@ def split_at(ln, bounds):
     for i0, i1 in zip([0] + cuts, cuts + [len(ln.spans)]):
         sp, sx = ln.spans[i0:i1], ln.sx[i0:i1]
         if not ''.join(t for t, _, _ in sp).strip(): continue
+        while sp and not sp[-1][0].strip(): sp, sx = sp[:-1], sx[:-1]
+        while sp and not sp[0][0].strip(): sp, sx = sp[1:], sx[1:]
         n = Line((sx[0][0], ln.y0, sx[-1][1], ln.y1), sp, ln.icon if i0 == 0 else None, sx=sx)
         if i0 == 0: n.icon_x0 = ln.icon_x0
         out.append(n)
@@ -449,9 +473,86 @@ def ruled_tables(H, used_h, lines, tables, imgs):
         if len(xs) < 3: continue
         cells = [(r, c, r + 1, c + 1) for r in range(len(ys) - 1) for c in range(len(xs) - 1)]
         full = {j: [(ys[0], ys[-1])] for j in range(len(xs))}
-        out.append({'xs': xs, 'ys': ys, 'cells': cells, 'rect': R, 'vat': full, 'ruled': True})
+        out.append({'xs': xs, 'ys': ys, 'cells': cells, 'rect': R, 'vat': full, 'hat': {i: [(x0, x1)] for i in range(len(ys))}, 'ruled': True})
         for k, _ in g: used_h.add(k)
     return out
+
+
+def build_cells(g):
+    xs, ys, vat, hat = g['xs'], g['ys'], g['vat'], g['hat']
+    R, C = len(ys) - 1, len(xs) - 1
+    uf2 = UF(R * C)
+    for r in range(R):
+        for c in range(C):
+            if c + 1 < C and _cover(vat[c + 1], ys[r], ys[r + 1]) < 0.6: uf2.u(r * C + c, r * C + c + 1)
+            if r + 1 < R and _cover(hat[r + 1], xs[c], xs[c + 1]) < 0.6: uf2.u(r * C + c, (r + 1) * C + c)
+    cells = {}
+    for r in range(R):
+        for c in range(C):
+            k = uf2.f(r * C + c); a = cells.get(k)
+            cells[k] = (r, c, r + 1, c + 1) if a is None else (min(a[0], r), min(a[1], c), max(a[2], r + 1), max(a[3], c + 1))
+    g['cells'] = sorted(set(cells.values()))
+
+
+def refine_rows(g, lines):
+    """Строки таблицы без линеек между ними (столбцы чисел в одной ячейке) — разделить по строкам текста,
+    если начала строк совпадают по высоте в нескольких столбцах."""
+    if 'hat' not in g: return
+    xs, ys = g['xs'], g['ys']
+    cellmap = {}
+    for (r0, c0, r1, c1) in g['cells']:
+        for r in range(r0, r1):
+            for c in range(c0, c1): cellmap[(r, c)] = (r0, c0, r1, c1)
+    new_y = []
+    for r in range(len(ys) - 1):
+        cols = {}
+        for c in range(len(xs) - 1):
+            cl = cellmap.get((r, c))
+            if not cl or cl[0] != r or cl[2] != r + 1 or cl[1] != c: continue
+            rc = fitz.Rect(xs[cl[1]], ys[r], xs[cl[3]], ys[r + 1])
+            ls = sorted([l for l in lines if rc.contains(fitz.Point(l.xc, l.yc))], key=lambda l: l.y0)
+            if len(ls) >= 2: cols[c] = ls
+        if len(cols) < 2: continue
+        cnt = {len(ls) for ls in cols.values()}
+        if len(cnt) != 1 or min(cnt) < 3: continue
+        allines = [l for ls in cols.values() for l in ls]
+        if any(l.text.rstrip().endswith('-') for l in allines): continue
+        if sum(1 for l in allines if len(l.text.strip()) <= 22) < 0.8 * len(allines): continue
+        starts = _clusters([l.y0 for l in allines], 2.0)
+        cuts = []
+        for y in starts[1:]:
+            n = sum(1 for ls in cols.values() if any(abs(l.y0 - y) <= 2.0 for l in ls))
+            if n >= max(2, 0.6 * len(cols)): cuts.append(y - 1.0)
+        if not cuts: continue
+        segcols = [c for c in cols] + [c for c in range(len(xs) - 1) if cellmap.get((r, c)) and cellmap[(r, c)][0] == r and cellmap[(r, c)][2] == r + 1 and c not in cols]
+        for y in cuts:
+            new_y.append((y, [(xs[cellmap[(r, c)][1]], xs[cellmap[(r, c)][3]]) for c in segcols]))
+    if not new_y: return
+    # вставить виртуальные линейки
+    all_y = sorted(set(ys) | {y for y, _ in new_y})
+    hat = {}
+    for i, y in enumerate(all_y):
+        j = next((k for k, yy in enumerate(ys) if abs(yy - y) < 0.01), None)
+        hat[i] = list(g['hat'][j]) if j is not None else []
+        for yy, iv in new_y:
+            if abs(yy - y) < 0.01: hat[i] += iv
+    g['ys'], g['hat'] = all_y, hat
+    build_cells(g)
+
+
+def cell_figs(g, other, H, V, imgs):
+    """Значки и рисунки внутри ячеек таблицы (условные обозначения, эскизы)."""
+    R = g['rect']
+    xs, ys = g['xs'], g['ys']
+    on_grid = lambda r: (r.height < 2 and any(abs((r.y0 + r.y1) / 2 - y) < 2.5 for y in ys) and r.width > 30) or \
+                        (r.width < 2 and any(abs((r.x0 + r.x1) / 2 - x) < 2.5 for x in xs) and r.height > 30)
+    items = [o for o in other if R.contains(o)] + \
+            [fitz.Rect(h[0], h[2] - .5, h[1], h[2] + .5) for h in H if R.contains(fitz.Point(h[0], h[2])) and R.contains(fitz.Point(h[1], h[2]))] + \
+            [fitz.Rect(v[2] - .5, v[0], v[2] + .5, v[1]) for v in V if R.contains(fitz.Point(v[2], v[0])) and R.contains(fitz.Point(v[2], v[1]))] + \
+            [i for i in imgs if R.contains(i)]
+    items = [r for r in items if not on_grid(r)]
+    out = [c for c in _cluster_rects(items, 2.5) if c.width >= 6 and c.height >= 6 and c.width < 0.6 * R.width]
+    return [c + (-1, -1, 1, 1) for c in out]
 
 
 def row_label(g, lines, y):
@@ -519,7 +620,7 @@ def layout_page(p, fx, anc, img, hdr=58, ftr=None):
         if R.width < 40 or R.height < 10: continue
         inside = [l for l in lines if R.contains(fitz.Point(l.xc, l.yc))]
         n_cells = len(g['cells'])
-        curves = sum(1 for o in other if R.contains(o) and o.width < R.width * 0.9)
+        curves = sum(1 for o in other if R.contains(o) and o.width < R.width * 0.9 and max(o.width, o.height) > 28)
         rast = sum(r.get_area() for r in imgs if R.contains(fitz.Point((r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2)))
         short = [l for l in inside if len(l.text.strip()) <= 4]
         if not inside: continue
@@ -531,6 +632,7 @@ def layout_page(p, fx, anc, img, hdr=58, ftr=None):
         if curves > 8 and curves > n_cells: continue                          # схема, а не таблица
         if rast > 0.25 * R.get_area(): continue                                 # рамка вокруг рисунка
         if R.width < 160 and n_cells >= 6 and len(short) > 0.7 * len(inside): continue   # разъём / сетка на схеме
+        refine_rows(g, inside)
         g['lines'] = inside
         tables.append(g)
         for k, h in enumerate(H):
@@ -544,6 +646,7 @@ def layout_page(p, fx, anc, img, hdr=58, ftr=None):
         spl = []
         for l in inside: spl += split_at(l, g['xs'][1:-1])
         lines = [l for l in lines if l not in inside] + spl
+        refine_rows(g, spl)
         g['lines'] = spl; tables.append(g)
     # рисунки: растровые картинки + векторная графика вне таблиц
     vec = [fitz.Rect(h[0], h[2] - .5, h[1], h[2] + .5) for k, h in enumerate(H) if k not in used_h] + \
@@ -615,12 +718,15 @@ def layout_page(p, fx, anc, img, hdr=58, ftr=None):
     for it in items:
         if it[0] == 'line':
             k = run_of(it)
+            ln_ = it[2]
+            if run and run_key and run_key[0] == 'w' and k != run_key and -2 < ln_.y0 - run[-1].y1 < 4 and abs(ln_.x0 - run[-1].x0) < 25:
+                k = run_key   # последняя короткая строка абзаца во всю ширину
             if run and k != run_key: flush()
             run_key = k; run.append(it[2]); continue
         flush()
         aid = anc()
         if it[0] == 'tab':
-            kind, h, txt, ne = table_from_grid(it[2], it[2]['lines'])
+            kind, h, txt, ne = table_from_grid(it[2], it[2]['lines'], [(r, img(r)) for r in cell_figs(it[2], other, H, V, imgs)])
             if kind == 'box':
                 out.append(('box', aid, f'<div id="{{P}}--{aid}" class="kp-box">{h}</div>', it[2]))
             else:
