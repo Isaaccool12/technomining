@@ -4,6 +4,9 @@ import 'package:engineer/features/library/presentation/machine_screen.dart';
 import 'package:engineer/features/library/presentation/machines_screen.dart';
 import 'package:engineer/features/library/presentation/manual_screen.dart';
 import 'package:engineer/features/library/presentation/procedure_screen.dart';
+import 'package:engineer/features/reports/presentation/create_report_screen.dart';
+import 'package:engineer/features/reports/presentation/report_screen.dart';
+import 'package:engineer/features/reports/presentation/reports_screen.dart';
 import 'package:engineer/features/search/search_screen.dart';
 import 'package:engineer/features/settings/settings_providers.dart';
 import 'package:engineer/features/settings/settings_repository.dart';
@@ -15,8 +18,32 @@ import 'package:go_router/go_router.dart';
 
 /// Builds the app router.
 GoRouter createRouter() => GoRouter(
+  initialLocation: '/reports',
   routes: [
-    GoRoute(path: '/', builder: (_, _) => const MachinesScreen()),
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, shell) => _HomeShell(shell: shell),
+      branches: [
+        StatefulShellBranch(
+          routes: [
+            GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen()),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(path: '/', builder: (_, _) => const MachinesScreen()),
+          ],
+        ),
+      ],
+    ),
+    GoRoute(
+      path: '/reports/new',
+      builder: (_, _) => const CreateReportScreen(),
+    ),
+    GoRoute(
+      path: '/report/:id',
+      builder: (_, state) =>
+          ReportScreen(reportId: state.pathParameters['id'] ?? ''),
+    ),
     GoRoute(path: '/search', builder: (_, _) => const SearchScreen()),
     GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
     GoRoute(
@@ -35,6 +62,26 @@ GoRouter createRouter() => GoRouter(
     ),
   ],
 );
+
+class _HomeShell extends StatelessWidget {
+  const _HomeShell({required this.shell});
+
+  final StatefulNavigationShell shell;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: shell,
+    bottomNavigationBar: NavigationBar(
+      selectedIndex: shell.currentIndex,
+      onDestinationSelected: (index) =>
+          shell.goBranch(index, initialLocation: index == shell.currentIndex),
+      destinations: const [
+        NavigationDestination(icon: Icon(Icons.assignment), label: 'Отчёты'),
+        NavigationDestination(icon: Icon(Icons.menu_book), label: 'Инструкции'),
+      ],
+    ),
+  );
+}
 
 class _ManualRoute extends ConsumerWidget {
   const _ManualRoute(this.manualId);

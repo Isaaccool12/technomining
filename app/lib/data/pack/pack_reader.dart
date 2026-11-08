@@ -5,6 +5,7 @@ import 'dart:isolate';
 import 'package:archive/archive_io.dart';
 import 'package:engineer/core/result.dart';
 import 'package:engineer/core/search_text.dart';
+import 'package:engineer/data/pack/techdata_parser.dart';
 import 'package:engineer/features/library/domain/library_models.dart';
 import 'package:path/path.dart' as p;
 
@@ -81,6 +82,8 @@ final class ParsedPack {
     required this.source,
     required this.procedures,
     required this.imageNames,
+    this.units = const [],
+    this.specs = const [],
   });
 
   /// Manual identifier.
@@ -109,6 +112,12 @@ final class ParsedPack {
 
   /// Names of the images stored from this pack.
   final List<String> imageNames;
+
+  /// Units the pack covers.
+  final List<ParsedUnit> units;
+
+  /// Tolerances and torques from `techdata.json`.
+  final List<ParsedSpec> specs;
 }
 
 /// Directory name of a manual: its id without unsafe characters.
@@ -159,6 +168,10 @@ Future<Result<ParsedPack, ImportFailure>> _unpack(
   final parsed = parsePackIndex(index, search);
   if (parsed == null) return const Err(ImportFailure.badFormat);
   final images = await _storeFiles(archive, rootPath, parsed.id);
+  final techdata =
+      _readJson(archive, 'techdata.json') ?? const <String, dynamic>{};
+  final manual = index['manual'] as Map<String, dynamic>;
+  final units = parsePackUnits(manual);
   return Ok(
     ParsedPack(
       id: parsed.id,
@@ -170,6 +183,8 @@ Future<Result<ParsedPack, ImportFailure>> _unpack(
       source: parsed.source,
       procedures: parsed.procedures,
       imageNames: images,
+      units: units,
+      specs: parseTechdata(techdata, units.first.code),
     ),
   );
 }

@@ -16,6 +16,9 @@ part 'app_database.g.dart';
     RecordDiscrepancies,
     OperationLog,
     AppSettings,
+    ManualUnits,
+    TechSpecs,
+    MeasurementReadings,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -23,7 +26,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -34,6 +37,22 @@ class AppDatabase extends _$AppDatabase {
         "title, body, content='', contentless_delete=1, "
         "tokenize='unicode61 remove_diacritics 2')",
       );
+    },
+    onUpgrade: (migrator, from, to) async {
+      if (from < 2) {
+        await migrator.addColumn(reports, reports.machine);
+        await migrator.addColumn(reports, reports.manualId);
+        await migrator.addColumn(reports, reports.unitCode);
+        await migrator.addColumn(reports, reports.unitName);
+        await migrator.addColumn(reports, reports.unitType);
+        await migrator.addColumn(reports, reports.serialNo);
+        await migrator.addColumn(reports, reports.customer);
+        await migrator.createTable(manualUnits);
+        await migrator.createTable(techSpecs);
+        await migrator.createTable(measurementReadings);
+        await migrator.createIndex(techSpecsManualIdx);
+        await migrator.createIndex(readingsPointIdx);
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');

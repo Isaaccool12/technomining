@@ -97,6 +97,13 @@ class Reports extends Table with AuditColumns {
   TextColumn get reportType => text()();
   TextColumn get status => text().withDefault(const Constant('draft'))();
   TextColumn get title => text()();
+  TextColumn get machine => text().withDefault(const Constant(''))();
+  TextColumn get manualId => text().nullable()();
+  TextColumn get unitCode => text().withDefault(const Constant(''))();
+  TextColumn get unitName => text().withDefault(const Constant(''))();
+  TextColumn get unitType => text().withDefault(const Constant(''))();
+  TextColumn get serialNo => text().withDefault(const Constant(''))();
+  TextColumn get customer => text().withDefault(const Constant(''))();
 
   @override
   Set<Column<Object>> get primaryKey => {id};
@@ -197,6 +204,79 @@ class OperationLog extends Table {
   List<String> get customConstraints => const [
     "CHECK (operation IN ('insert', 'update', 'delete', 'restore', 'import'))",
   ];
+
+  @override
+  bool get isStrict => true;
+}
+
+/// Unit of a manual: one for a unit pack, several for a machine book.
+@DataClassName('ManualUnitRow')
+class ManualUnits extends Table {
+  TextColumn get manualId =>
+      text().references(Manuals, #id, onDelete: KeyAction.cascade)();
+  TextColumn get code => text()();
+  TextColumn get name => text()();
+  TextColumn get unitType => text()();
+  IntColumn get sortOrder => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {manualId, code};
+
+  @override
+  bool get isStrict => true;
+}
+
+/// Tolerance or tightening torque from a pack's `techdata.json`.
+@DataClassName('TechSpecRow')
+@TableIndex(name: 'tech_specs_manual_idx', columns: {#manualId, #kind})
+class TechSpecs extends Table {
+  TextColumn get id => text()();
+  TextColumn get manualId =>
+      text().references(Manuals, #id, onDelete: KeyAction.cascade)();
+  TextColumn get kind => text()();
+  TextColumn get name => text()();
+  TextColumn get unit => text()();
+  RealColumn get nominal => real().nullable()();
+  RealColumn get minValue => real().nullable()();
+  RealColumn get maxValue => real().nullable()();
+  RealColumn get limitValue => real().nullable()();
+  TextColumn get specKind => text().withDefault(const Constant(''))();
+  TextColumn get note => text().withDefault(const Constant(''))();
+  TextColumn get torqueText => text().withDefault(const Constant(''))();
+  TextColumn get procKey => text()();
+  TextColumn get procTitle => text()();
+  TextColumn get procCode => text()();
+  IntColumn get page => integer().nullable()();
+
+  /// Unit codes wrapped in commas (`,eng,trans,`) for a LIKE match.
+  TextColumn get unitCodes => text()();
+  IntColumn get sortOrder => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+
+  @override
+  List<String> get customConstraints => const [
+    "CHECK (kind IN ('spec', 'torque'))",
+  ];
+
+  @override
+  bool get isStrict => true;
+}
+
+/// One reading of a measurement point; every new value is a new row.
+@DataClassName('ReadingRow')
+@TableIndex(name: 'readings_point_idx', columns: {#pointId})
+class MeasurementReadings extends Table with AuditColumns {
+  TextColumn get reportId =>
+      text().references(Reports, #id, onDelete: KeyAction.restrict)();
+  TextColumn get pointId => text()();
+
+  /// Canonical decimal with a dot, as entered.
+  TextColumn get valueText => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
 
   @override
   bool get isStrict => true;

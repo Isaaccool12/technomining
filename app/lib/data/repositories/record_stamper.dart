@@ -50,6 +50,8 @@ final class RecordStamper {
     required String entityType,
     required String entityId,
     required String operation,
+    String? field,
+    String? oldValue,
     String? newValue,
   }) async {
     await _db
@@ -60,6 +62,8 @@ final class RecordStamper {
             entityType: entityType,
             entityId: entityId,
             operation: operation,
+            field: Value(field),
+            oldValue: Value(oldValue),
             newValue: Value(newValue),
             authorId: stamp.authorId,
             hlc: stamp.hlc,

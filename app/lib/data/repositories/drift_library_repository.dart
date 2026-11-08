@@ -6,6 +6,7 @@ import 'package:engineer/core/result.dart';
 import 'package:engineer/core/search_text.dart';
 import 'package:engineer/data/db/app_database.dart';
 import 'package:engineer/data/pack/pack_reader.dart';
+import 'package:engineer/data/pack/techdata_parser.dart';
 import 'package:engineer/data/repositories/record_stamper.dart';
 import 'package:engineer/features/library/domain/library_models.dart';
 import 'package:engineer/features/library/domain/library_repository.dart';
@@ -93,6 +94,7 @@ final class DriftLibraryRepository implements LibraryRepository {
           await _insertProcedure(pack.id, procedure, stamp);
         }
         await _insertImages(pack.imageNames);
+        await _insertTechdata(pack);
         await _stamper.logOperation(
           stamp,
           entityType: 'manual',
@@ -181,6 +183,48 @@ final class DriftLibraryRepository implements LibraryRepository {
       [docId, procedure.titleIndex, procedure.bodyIndex],
     );
   }
+
+  Future<void> _insertTechdata(ParsedPack pack) async {
+    await _db.batch((batch) {
+      batch
+        ..insertAll(_db.manualUnits, [
+          for (var i = 0; i < pack.units.length; i++)
+            ManualUnitsCompanion.insert(
+              manualId: pack.id,
+              code: pack.units[i].code,
+              name: pack.units[i].name,
+              unitType: pack.units[i].unitType,
+              sortOrder: i,
+            ),
+        ], mode: InsertMode.insertOrIgnore)
+        ..insertAll(_db.techSpecs, [
+          for (var i = 0; i < pack.specs.length; i++)
+            _specCompanion(pack.id, pack.specs[i], i),
+        ]);
+    });
+  }
+
+  TechSpecsCompanion _specCompanion(String manualId, ParsedSpec spec, int i) =>
+      TechSpecsCompanion.insert(
+        id: '$manualId:${spec.key}',
+        manualId: manualId,
+        kind: spec.isTorque ? 'torque' : 'spec',
+        name: spec.name,
+        unit: spec.unit,
+        nominal: Value(spec.nominal),
+        minValue: Value(spec.min),
+        maxValue: Value(spec.max),
+        limitValue: Value(spec.limit),
+        specKind: Value(spec.specKind),
+        note: Value(spec.note),
+        torqueText: Value(spec.torqueText),
+        procKey: spec.procKey,
+        procTitle: spec.procTitle,
+        procCode: spec.procCode,
+        page: Value(spec.page),
+        unitCodes: ',${spec.unitCodes.join(',')},',
+        sortOrder: i,
+      );
 
   Future<void> _insertImages(List<String> names) async {
     await _db.batch((batch) {
