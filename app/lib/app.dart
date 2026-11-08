@@ -58,7 +58,9 @@ ThemeData _buildTheme(Brightness brightness) {
     materialTapTargetSize: MaterialTapTargetSize.padded,
   );
   return base.copyWith(
-    textTheme: base.textTheme.apply(fontSizeFactor: 1.12),
+    textTheme: Typography.englishLike2021
+        .merge(base.textTheme)
+        .apply(fontSizeFactor: 1.12),
     listTileTheme: const ListTileThemeData(minVerticalPadding: 12),
   );
 }
