@@ -6,6 +6,8 @@
 """
 import sys, os, re, io, json, zipfile, hashlib, html, argparse, time
 import pymupdf as fitz
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import klayout as K
 
 FIX_CP1251 = True
 LANG = 'ru'
@@ -407,7 +409,32 @@ def table_html(p, tb):
     return '<table class="kp-tbl">' + ''.join(rows) + '</table>', ' | '.join(t for t in txt if t)
 
 # ---------- оглавление → процедуры (уровни относительные: RU 1-4, EN 1-3) ----------
-def toc_entries(toc, npages):
+COVERS = set()   # титульные листы и листы содержания частей инструкции — в пакет не идут
+LEAD_RX = re.compile(r'^(.{3,}?)\s*\.{5,}\s*(\d{1,3})\s*$')
+def is_cover(pg):
+    t = fx(pg.get_text())
+    lead = sum(1 for ln in t.split('\n') if LEAD_RX.match(ln.strip()))
+    if len(re.sub(r'\s+', '', t)) < 70 and not pg.get_images() and len(pg.get_drawings()) < 6: return True   # пустой лист
+    return lead >= 2 or bool(re.search(r'ЗАВОДСКАЯ ИНСТРУКЦИЯ|SHOP MANUAL', t) and re.search(r'Модель машины|Machine model', t))
+
+def cover_items(pg):
+    """Пункты содержания на титульном листе части: (название, страница внутри части)."""
+    out, acc = [], ''
+    for ln in fx(pg.get_text()).split('\n'):
+        ln = ln.strip()
+        if not ln: continue
+        m = LEAD_RX.match(ln)
+        if m:
+            head = m.group(1)
+            out.append((re.sub(r'\s+', ' ', ((acc + ' ' if acc and head[:1].islower() else '') + head).strip()), int(m.group(2)))); acc = ''
+        elif not re.search(r'ЗАВОДСКАЯ|SHOP MANUAL|Модель машины|Серийный|^\d+$|^HD|^SRU|^SEN|^SEBM|^SRBM', ln): acc = ln if len(ln) < 120 else ''
+        else: acc = ''
+    return out
+
+def toc_entries(toc, npages, d=None):
+    """Оглавление → процедуры. Уровни относительные (RU 1-4, EN 1-3).
+    Листы между заголовком части и первой процедурой (таблица кодов неисправностей, вводные сведения) — отдельные процедуры;
+    титульные листы и листы содержания пропускаются."""
     L = max(l for l, _, _ in toc)
     entries, sec2, sec3 = [], '', ''
     for i, (l, t, p) in enumerate(toc):
@@ -417,9 +444,24 @@ def toc_entries(toc, npages):
         if p < 1: continue
         if l == L or (l == L - 1 and (not nxt or nxt[0] <= L - 1)):
             entries.append({'title': t, 'p0': p, 'sec2': sec2, 'sec3': sec3 if l == L else t, 'lvl': l})
-    starts = sorted(set(e['p0'] for e in entries) | {npages + 1})
+        elif d is not None and l >= L - 2 and nxt and nxt[0] > l and nxt[2] > p:
+            gap = list(range(p, nxt[2]))
+            cov = [q for q in gap if is_cover(d[q-1])]
+            COVERS.update(cov)
+            rest = [q for q in gap if q not in cov]
+            if not rest: continue
+            s2, s3 = (sec2, t) if l == L - 1 else (t, t)
+            items = []
+            for q in cov[:1]:
+                items = [(tt, p + n - 1) for tt, n in cover_items(d[q-1]) if p + n - 1 in rest]
+            if not items: items = [(t, rest[0])]
+            if items[0][1] > rest[0]: items.insert(0, (t, rest[0]))
+            for tt, q in items:
+                entries.append({'title': tt, 'p0': q, 'sec2': s2, 'sec3': s3, 'lvl': l, 'gap': True})
+    starts = sorted(set(e['p0'] for e in entries) | {p for _, _, p in toc if p >= 1} | {npages + 1})
     for e in entries:
         e['p1'] = max(e['p0'], min(s for s in starts if s > e['p0']) - 1)
+        while e['p1'] > e['p0'] and e['p1'] in COVERS: e['p1'] -= 1
     return entries
 
 def detect_lang(d):
@@ -602,6 +644,7 @@ def main():
     ap.add_argument('--mt', default='none', choices=['none', 'claude'], help='машинный перевод несопоставленного (claude: нужен ANTHROPIC_API_KEY)')
     ap.add_argument('--mt-model', default='claude-sonnet-5-5')
     ap.add_argument('--rules', default=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'rules_komatsu.csv'))
+    ap.add_argument('--layout', default='book', choices=['book', 'split'], help='book — книга машины одним пакетом, процедуры помечены агрегатами; split — отдельный пакет на каждый агрегат (как раньше)')
     ap.add_argument('--pages', default='')  # для отладки: 1700-1765
     a = ap.parse_args()
     global R, AGG
@@ -613,7 +656,7 @@ def main():
     print(f'язык: {LANG}, перекодировка cp1251: {FIX_CP1251}', flush=True)
     toc = [(l, fx(t).strip(), p) for l, t, p in d.get_toc()]
     # процедуры: элементы 4-го уровня; 3-й уровень без детей — тоже процедура
-    entries = toc_entries(toc, d.page_count)
+    entries = toc_entries(toc, d.page_count, d)
     tm = TM(a.tm) if LANG == 'en' else None
     amap, dru, ru_entries, ru_fix = {}, None, [], False
     if LANG == 'en' and a.parallel:
@@ -682,7 +725,7 @@ def main():
             im = Image.frombytes('RGB' if pix.n == 3 else 'L', (pix.width, pix.height), pix.samples)
             if im.mode == 'RGB':
                 sm = im.resize((max(1, im.width // 8), max(1, im.height // 8))).convert('HSV').split()[1]
-                if sum(1 for v in sm.getdata() if v > 40) < 0.01 * sm.width * sm.height: im = im.convert('L')
+                if sum(1 for v in (sm.get_flattened_data() if hasattr(sm, "get_flattened_data") else sm.getdata()) if v > 40) < 0.01 * sm.width * sm.height: im = im.convert('L')
             bio = io.BytesIO(); im.save(bio, 'WEBP', quality=q or a.q, method=4); b = bio.getvalue(); ext = 'webp'
         h = hashlib.sha1(b).hexdigest()[:16]
         if h not in imgs: imgs[h] = (f'img/{h}.{ext}', b)
@@ -704,105 +747,76 @@ def main():
             sp['crop'] = jpeg(pr, 60)
 
     def render_page(pn):
+        """Страница → HTML с сохранением структуры оригинала (klayout), допуски, моменты затяжки."""
         if pn in page_cache: return page_cache[pn]
         p = d[pn-1]; pw, ph = p.rect.width, p.rect.height
-        blocks = page_text_blocks(p)
-        plain = '\n'.join(' '.join(b[2]) for b in blocks if b[0] == 't')
-        specs, trects = ([], [])
+        if pn in COVERS:
+            page_cache[pn] = {'html': '', 'text': '', 'specs': [], 'tq': []}; return page_cache[pn]
+        plain = K.fix_dash(fx(p.get_text()))
+        specs = []
         if re.search(r'Ремонтн\w*\s*предел|Нормативн\w*\s*(размер|зазор)|Repair\s*limit|Standard\s*(size|clearance)', plain):
-            specs, trects = table_specs(p, pn)
-            for k, sp in enumerate(specs):
-                sp['id'] = f's{pn}-{k+1}'; crop_spec(p, sp)
-        elif re.search(r'Обозначение|Пункт проверки|№ детали', plain):
-            try: trects = [fitz.Rect(t.bbox) for t in p.find_tables().tables]
-            except Exception: trects = []
-        htabs = []
-        if re.search(r'Спецприспособления|Special tools', plain):
-            anc_y = [b[1][3] for b in blocks if b[0] == 't' and any(re.search(r'Спецприспособления|Special tools', l) for l in b[2])]
-            htabs = [t for t in seg_tables(p, anc_y) if not any(t[0].intersects(r) for r in trects)]
-        parts, tq = [], []
+            specs, _ = table_specs(p, pn)
         anchor_n = [0]
         def anc():
             anchor_n[0] += 1; return f'a{pn}-{anchor_n[0]}'
-        dense_tabs = []
-        dense = is_image_page(p, blocks, pw, ph)
-        if not trects and not htabs and (dense or re.search(r'Причина|Код неисправности|Таблица \d|Нормативное значение|Cause|Failure code|Table \d|Standard value', plain)) and not any(b[0] == 'i' and (b[1][2]-b[1][0])*(b[1][3]-b[1][1]) > 0.35*pw*ph for b in blocks):
-            # плотная страница диагностики: таблицы → HTML, если вне таблиц почти нет текста
-            try: tl = [t for t in p.find_tables().tables if t.row_count >= 2 and t.col_count >= 2]
-            except Exception: tl = []
-            if tl:
-                rest = [b for b in blocks if b[0] == 't' and not any(fitz.Rect(t.bbox).intersect(fitz.Rect(b[1])).get_area() > 0.5*max(1, fitz.Rect(b[1]).get_area()) for t in tl)]
-                if len(rest) <= 18 or not dense:
-                    for t in tl:
-                        h_, t_ = table_html(p, t)
-                        if h_: dense_tabs.append((fitz.Rect(t.bbox), h_, t_))
-        if dense_tabs:
-            htabs = htabs + dense_tabs
-        if not dense_tabs and (is_image_page(p, blocks, pw, ph) or (trects and sum(r.get_area() for r in trects) > 0.45*pw*(FTR_Y-HDR_Y))):
-            clip = fitz.Rect(30, HDR_Y, pw-30, FTR_Y)
-            name = jpeg(p.get_pixmap(dpi=a.dpi, clip=clip))
-            aid = anc()
-            parts.append(f'<figure id="{{P}}--{aid}" class="kp-page"><img src="{name}" alt="стр. {pn}"><figcaption>Стр. {pn} PDF</figcaption></figure>')
-            for s in specs: s['anchor'] = aid
-            # моменты затяжки на рисунках (раздел 10): без операции
-            for m in TQ_BARE.finditer(plain.replace('\n', ' ')):
-                tq.append({'nm': m.group(1) + ('–' + m.group(2) if m.group(2) else ''), 'kgm': m.group(3), 'op': 'по рисунку', 'anchor': aid, 'page': pn})
-        else:
-            col = lambda b: 0 if (b[1][2]-b[1][0]) > 0.6*pw else (1 if b[1][0] < pw*0.48 else 2)
-            inside = lambda b: any(fitz.Rect(b[1]).intersect(r).get_area() > 0.5*max(1, fitz.Rect(b[1]).get_area()) for r in trects)
-            for r_, h_, t_ in htabs:
-                trects.append(r_)
-            figs = [fitz.Rect(b[1]) for b in blocks if b[0] == 'i' and b[1][2]-b[1][0] >= 30 and b[1][3]-b[1][1] >= 30]
-            # подписи поверх рисунка уже есть на вырезке рисунка — в текст их не дублировать
-            on_fig = lambda b: b[0] == 't' and any(fitz.Rect(b[1]).intersect(f).get_area() > 0.6*max(1, fitz.Rect(b[1]).get_area()) for f in figs)
-            blocks = [b for b in blocks if not inside(b) and not on_fig(b)] + [('tab', tuple(r), None) for r in trects[:len(trects)-len(htabs)]] + [('htab', tuple(r_), h_) for r_, h_, t_ in htabs]
-            order = sorted(blocks, key=lambda b: (0 if col(b) == 0 and b[1][1] < 120 else col(b), b[1][1]))
-            stage = ''; prev = ''
-            def clean_op(op):
-                op = re.sub(r'^[^А-ЯA-Zа-яa-z]+', '', op.replace('🔧', '').replace('⚠', '').replace('🧴', '')).strip()
-                if len(op) > 50 and '. ' in op: op = op.rsplit('. ', 1)[-1]
-                return op.strip(' :')
-            for b in order:
-                if b[0] == 'htab':
-                    aid = anc(); parts.append(f'<div id="{{P}}--{aid}" class="kp-tw">{b[2]}</div>'); continue
-                if b[0] == 'tab':
-                    aid = anc(); name = jpeg(p.get_pixmap(dpi=max(a.dpi, 140), clip=fitz.Rect(b[1]) + (-2, -2, 2, 2)))
-                    parts.append(f'<figure id="{{P}}--{aid}" class="kp-tab"><img src="{name}" alt="таблица"></figure>')
-                    for s_ in specs: s_.setdefault('anchor', aid)
-                    continue
-                if b[0] == 'i':
-                    w, h = b[1][2]-b[1][0], b[1][3]-b[1][1]
-                    if w < 30 or h < 30: continue
-                    r = fitz.Rect(b[1]) + (-3, -3, 3, 3)
-                    name = jpeg(p.get_pixmap(dpi=max(a.dpi, 130), clip=r))
-                    parts.append(f'<figure><img src="{name}" alt=""></figure>')
-                    continue
-                for para in join_lines(b[2]):
-                    if STEP_RX.match(para): stage = para[:80]
-                    aid = anc(); cls = ''
-                    if para.startswith('🔧'): cls = ' class="kp-tq"'
-                    elif para.startswith('⚠'): cls = ' class="kp-warn"'
-                    elif para.startswith('🧴'): cls = ' class="kp-mat"'
-                    hx = html.escape(para)
-                    if len(para) < 70 and STEP_RX.match(para) and not re.search(r'[.:;]$', para):
-                        parts.append(f'<p id="{{P}}--{aid}" class="kp-step"><b>{hx}</b></p>')
-                    else:
-                        parts.append(f'<p id="{{P}}--{aid}"{cls}>{hx}</p>')
-                    got = False
-                    for m in TQ_RX.finditer(para.replace('🔧', ' ')):
-                        got = True
-                        tq.append({'nm': m.group(2) + ('–' + m.group(3) if m.group(3) else ''), 'kgm': m.group(4), 'op': clean_op(m.group(1)), 'stage': stage, 'anchor': aid, 'page': pn})
-                    if not got:
-                        for m in TQ_BARE.finditer(para):
-                            op = clean_op(prev) if prev.rstrip().endswith(':') else ''
-                            tq.append({'nm': m.group(1) + ('–' + m.group(2) if m.group(2) else ''), 'kgm': m.group(3), 'op': op or 'см. текст', 'stage': stage, 'anchor': aid, 'page': pn})
-                    prev = para
-        if htabs: plain += '\n' + '\n'.join(t_ for _, _, t_ in htabs)
+        def img(r):
+            dpi = a.dpi if r.width < 700 else max(a.dpi, min(170, 4000 * 72 / r.width))   # большие схемы — чётче
+            return jpeg(p.get_pixmap(dpi=max(dpi, 120 if r.width < 700 else dpi), clip=(r + (-3, -3, 3, 3)) & p.rect))
+        try:
+            L_ = K.layout_page(p, fx, anc, img, hdr=HDR_Y - 2, ftr=ph - 50)
+        except Exception as ex:   # страховка: страница целиком картинкой, но не потеряна
+            print(f'стр. {pn}: ошибка вёрстки ({ex}) — страница картинкой', file=sys.stderr)
+            aid = anc(); nm = jpeg(p.get_pixmap(dpi=a.dpi, clip=fitz.Rect(30, HDR_Y, pw - 30, ph - 50)))
+            L_ = {'items': [('fig', aid, f'<figure id="{{P}}--{aid}" class="kp-page"><img src="{nm}" alt="стр. {pn}"></figure>', None)], 'tables': [], 'fig_text': []}
+        # допуски — к таблице, в которой лежит строка
+        for k, sp in enumerate(specs):
+            sp['id'] = f's{pn}-{k+1}'
+            rr = sp.get('_row')
+            t = next((t for t in L_['tables'] if rr is not None and t['rect'].intersects(rr)), None) or (L_['tables'][0] if L_['tables'] else None)
+            sp['anchor'] = t['anchor'] if t else (L_['items'][0][1] if L_['items'] else anc())
+            crop_spec(p, sp)
+        parts, tq, stage, prev = [], [], '', ''
+        def clean_op(op):
+            op = re.sub(r'^[^А-ЯA-Zа-яa-z]+', '', op.replace('🔧', '').replace('⚠', '').replace('🧴', '').replace('★', '')).strip()
+            if len(op) > 50 and '. ' in op: op = op.rsplit('. ', 1)[-1]
+            return op.strip(' :')
+        for kind, aid, h, obj in L_['items']:
+            parts.append(h)
+            if kind == 'p':
+                para = obj['text']
+                if K.STEP_RX.match(para): stage = para[:80]
+                got = False
+                for m in TQ_RX.finditer(para.replace('🔧', ' ')):
+                    got = True
+                    tq.append({'nm': m.group(2) + ('–' + m.group(3) if m.group(3) else ''), 'kgm': m.group(4), 'op': clean_op(m.group(1)), 'stage': stage, 'anchor': aid, 'page': pn})
+                if not got:
+                    for m in TQ_BARE.finditer(para):
+                        op = clean_op(prev) if prev.rstrip().endswith(':') else ''
+                        tq.append({'nm': m.group(1) + ('–' + m.group(2) if m.group(2) else ''), 'kgm': m.group(3), 'op': op or 'см. текст', 'stage': stage, 'anchor': aid, 'page': pn})
+                prev = para
+            elif kind == 'tab':
+                ct = obj.get('cell_texts', [])
+                for r0, c0, t_ in ct:
+                    if not t_: continue
+                    ms = list(TQ_RX.finditer(t_))
+                    for m in ms:
+                        tq.append({'nm': m.group(2) + ('–' + m.group(3) if m.group(3) else ''), 'kgm': m.group(4), 'op': clean_op(m.group(1)), 'stage': 'таблица', 'anchor': aid, 'page': pn})
+                    if not ms:
+                        for m in TQ_BARE.finditer(t_):
+                            lab = next((x for rr_, cc_, x in ct if rr_ <= r0 and cc_ < c0 and x and not TQ_BARE.search(x)), '')
+                            tq.append({'nm': m.group(1) + ('–' + m.group(2) if m.group(2) else ''), 'kgm': m.group(3), 'op': clean_op(lab) or 'по таблице', 'stage': 'таблица', 'anchor': aid, 'page': pn})
+        ftxt = ' '.join(l.text for l in L_.get('fig_text', []))
+        if ftxt:
+            fa = next((aid for kind, aid, _, _ in L_['items'] if kind == 'fig'), None)
+            for m in TQ_BARE.finditer(K.fix_dash(ftxt)):
+                tq.append({'nm': m.group(1) + ('–' + m.group(2) if m.group(2) else ''), 'kgm': m.group(3), 'op': 'по рисунку', 'anchor': fa or anc(), 'page': pn})
         r = {'html': '\n'.join(parts), 'text': plain, 'specs': specs, 'tq': tq}
         page_cache[pn] = r
         return r
 
-    packs = {c: {'secs': {}, 'procs': {}, 'search': {}, 'html': {}, 'tq': [], 'specs': [], 'imgs': set()} for c in AGG}
+    BOOK = a.layout == 'book' and not a.agg
+    packs = {c: {'secs': {}, 'procs': {}, 'search': {}, 'html': {}, 'tq': [], 'specs': [], 'imgs': set()} for c in (['book'] if BOOK else AGG)}
+    used_aggs = {}
     seen_title = {}
     for n, e in enumerate(entries):
         title = nice_title(e)
@@ -847,27 +861,32 @@ def main():
                     else:
                         t_, k_ = tr_str(t['op_en'], 'операция затяжки')
                         if t_: t['op'], t['tr'] = t_, k_
-        body = '\n'.join(f'<div class="kp-pg" data-page="{pn}">' + pg['html'] + '</div>' for pn, pg in zip(range(e['p0'], e['p1']+1), pages)).replace('{P}', 'p-' + pid)
+        body = '\n'.join(f'<div class="kp-pg" data-page="{pn}">' + pg['html'] + '</div>' for pn, pg in zip(range(e['p0'], e['p1']+1), pages) if pg['html']).replace('{P}', 'p-' + pid)
+        # заголовок процедуры на странице совпадает с шапкой — не повторять
+        mh = re.search(r'<h3 id="[^"]*" class="kp-h">(.*?)</h3>', body[:3000])
+        if mh and re.sub(r'\W+', '', html.unescape(re.sub('<[^>]+>', '', mh.group(1)))).lower() == re.sub(r'\W+', '', title).lower():
+            body = body.replace(mh.group(0), '', 1)
         hdr = f'<h2>{html.escape(title)}</h2><p class="kp-src">{html.escape(a.machine)} · {html.escape(e["sec2"])} · {html.escape(e["sec3"])} · стр. {e["p0"]}' + (f'–{e["p1"]}' if e['p1'] > e['p0'] else '') + '</p>'
         text = '\n'.join(pg['text'] for pg in pages)
         sec2n = (re.match(r'^(\d\d)', e['sec2']) or [None, ''])[1]
         code = f"{sec2n}-{e['p0']}"
         used = set(re.findall(r'img/[0-9a-f]+\.(?:jpg|webp)', body)) | {s['crop'] for pg in pages for s in pg['specs'] if s.get('crop')}
-        for c in tags:
+        for c in tags: used_aggs[c] = used_aggs.get(c, 0) + 1
+        for c in (['book'] if BOOK else tags):
             P = packs[c]
-            st = f"{e['sec2']} › {e['sec3']}"
-            P['secs'].setdefault(st, []).append(pid)
-            P['procs'][pid] = {'code': code, 'title': title, 'section': st, 'pages': [e['p0'], e['p1']], **({'tier': 'online'} if is_online(e) else {}),
+            st = f"{e['sec2']} › {e['sec3']}" if e['sec2'] != e['sec3'] else e['sec2']
+            P['secs'].setdefault(st, {'path': [e['sec2'], e['sec3']] if e['sec2'] != e['sec3'] else [e['sec2']], 'procs': []})['procs'].append(pid)
+            P['procs'][pid] = {'code': code, 'title': title, 'section': st, 'pages': [e['p0'], e['p1']], **({'tier': 'online'} if is_online(e) else {}), **({'aggs': tags} if BOOK else {}),
                                **({'title_en': title_en, 'tr': tr_t} if title_en else {}), **({'ru': {'doc': a.parallel_doc, 'proc': 'k' + str(ru['p0']), 'sim': e.get('ru_sim')}} if ru else {})}
             P['search'][pid] = title + '\n' + (title_en + '\n' if title_en else '') + text
             P['html'][pid] = '<div class="kp">' + hdr + body + '</div>'
             P['imgs'] |= used
             for pg in pages:
                 for t in pg['tq']:
-                    P['tq'].append({**t, 'proc': pid, 'title': title, 'code': code, 'anchor': 'p-' + pid + '--' + t['anchor']})
+                    P['tq'].append({**t, 'proc': pid, 'title': title, 'code': code, 'anchor': 'p-' + pid + '--' + t['anchor'], **({'aggs': tags} if BOOK else {})})
                 for s in pg['specs']:
                     if 'anchor' in s:
-                        P['specs'].append({**s, 'proc': pid, 'title': title, 'code': code, 'anchor': 'p-' + pid + '--' + s['anchor']})
+                        P['specs'].append({**s, 'proc': pid, 'title': title, 'code': code, 'anchor': 'p-' + pid + '--' + s['anchor'], **({'aggs': tags} if BOOK else {})})
         if n % 50 == 0: print(f'{n}/{len(entries)} {time.time()-t0:.0f}s', flush=True)
 
     os.makedirs(a.out, exist_ok=True)
@@ -910,7 +929,7 @@ def main():
     summary = []
     for c, P in packs.items():
         if not P['procs']: continue
-        nm, utype = AGG[c]
+        nm, utype = AGG[c] if c in AGG else ('Заводская инструкция', '')
         # дубли спецификаций (одна страница в нескольких процедурах) убрать
         seen = set(); specs = []
         for s in P['specs']:
@@ -922,10 +941,13 @@ def main():
             k = (t['page'], t['op'], t['nm'])
             if k in seen: continue
             seen.add(k); tqs.append(t)
-        man = {'id': f"{a.doc}-{c}", 'title': f"{a.machine} — {nm}" + (' · EN' if LANG == 'en' else ''), 'lang': LANG, 'doc': a.doc, 'machine': a.machine,
+        man = {'id': f"{a.doc}-{c}", 'title': f"{a.machine} — {nm}" + (f' ({a.doc})' if c == 'book' else '') + (' · EN' if LANG == 'en' else ''), 'lang': LANG, 'doc': a.doc, 'machine': a.machine,
                'unitType': utype, 'agg': c, 'source': 'komatsu-pdf'}
-        ix = {'format': 'qs-manual-pack', 'version': 1, 'generator': 'kpdf2pack 0.1', 'created': time.strftime('%Y-%m-%dT%H:%M:%S'),
-              'manual': man, 'sections': [{'title': t, 'procs': ids} for t, ids in P['secs'].items()], 'linked': [],
+        if c == 'book':   # книга машины: список агрегатов, которыми помечены процедуры
+            man['kind'] = 'book'
+            man['aggs'] = [{'code': k, 'name': AGG[k][0], 'type': AGG[k][1], 'procs': used_aggs[k]} for k in AGG if used_aggs.get(k)]
+        ix = {'format': 'qs-manual-pack', 'version': 1, 'generator': 'kpdf2pack 0.2', 'created': time.strftime('%Y-%m-%dT%H:%M:%S'),
+              'manual': man, 'sections': [{'title': t, 'path': v['path'], 'procs': v['procs'], **({'aggs': sorted({g for pid in v['procs'] for g in P['procs'][pid].get('aggs', [])})} if c == 'book' else {})} for t, v in P['secs'].items()], 'linked': [],
               'procs': P['procs'], 'images': len(P['imgs']),
               'counts': {'procs': len(P['procs']), 'torques': len(tqs), 'specs': len(specs)}}
         fn = os.path.join(a.out, f"{a.machine}_{c}{'_en' if LANG == 'en' else ''}_app.zip")
