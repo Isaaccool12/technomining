@@ -312,6 +312,7 @@ class _ItemEditor extends StatelessWidget {
     required this.item,
     required this.isEditable,
     required this.onChanged,
+    super.key,
   });
 
   final InspectionItem item;
