@@ -1,0 +1,51 @@
+name: Инспекция APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: backup
+          path: src
+      - name: Разобрать APK
+        run: |
+          F="src/TechnoMining-0.2-test (1).apk"
+          [ -f "$F" ] || F=$(ls src/*.apk | head -1)
+          echo "Файл: $F"
+          OUT=docs/apk-inspect
+          mkdir -p "$OUT"
+          unzip -l "$F" > "$OUT/entries.txt" || true
+          AAPT=$(ls -d /usr/local/lib/android/sdk/build-tools/*/aapt2 2>/dev/null | tail -1)
+          if [ -n "$AAPT" ]; then "$AAPT" dump badging "$F" > "$OUT/badging.txt" 2>&1 || true; fi
+          unzip -p "$F" assets/flutter_assets/AssetManifest.json > "$OUT/assets.json" 2>/dev/null || true
+          mkdir -p /tmp/apk && unzip -o "$F" -d /tmp/apk > /dev/null || true
+          SO=$(ls /tmp/apk/lib/*/libapp.so 2>/dev/null | head -1)
+          python3 - "$SO" "$OUT/strings-ru.txt" <<'PY'
+          import re, sys
+          data = open(sys.argv[1], 'rb').read()
+          seen, out = set(), []
+          for m in re.finditer(rb'(?:[\xd0\xd1][\x80-\xbf]|[ -~]){4,}', data):
+              try:
+                  s = m.group().decode('utf-8')
+              except UnicodeDecodeError:
+                  continue
+              if re.search('[А-Яа-яЁё]', s) and s not in seen:
+                  seen.add(s); out.append(s)
+          open(sys.argv[2], 'w', encoding='utf-8').write('\n'.join(out[:1500]))
+          PY
+          ls -la "$OUT"
+      - name: Сохранить
+        run: |
+          git config user.name apk-inspect
+          git config user.email noreply@users.noreply.github.com
+          git add docs/apk-inspect
+          git commit -m "Инспекция APK" || true
+          git push || true
