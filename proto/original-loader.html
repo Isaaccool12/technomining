@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ТехноМайнинг 0.2 — оригинал</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;display:flex;flex-direction:column;background:#0e1116;color:#e6edf3;
+    font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;background:#151a21;border-bottom:1px solid #232a33}
+  .bar b{font-size:14px}
+  .st{font-size:12px;color:#9aa4b2}
+  .st.ok{color:#7fd18b}.st.bad{color:#ff9086}
+  .bar button{font:12.5px inherit;font-family:inherit;background:#232b35;color:#dfe7ef;border:1px solid #2c3641;
+    border-radius:8px;padding:6px 10px;cursor:pointer}
+  .bar button:hover{background:#2b3540}
+  .bar button.on{background:#2a2113;border-color:#6b5220;color:#f0c780}
+  .grow{flex:1}
+  .wrap{flex:1;overflow:auto;display:flex;justify-content:center;background:#0e1116;padding:0}
+  iframe{width:100%;height:100%;border:0;background:#f3f4f6;display:block}
+  .wrap.phone iframe{width:390px;max-width:100%;height:844px;margin:12px 0;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+  .wrap.pad iframe{width:768px;max-width:100%;height:900px;margin:12px 0;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+  .err{margin:24px auto;max-width:720px;background:#2a1517;border:1px solid #5a2a2a;border-radius:12px;padding:16px;font-size:13.5px;line-height:1.5}
+  .err h3{margin:0 0 8px;font-size:15px;color:#ff9086}
+  .err code{background:#1b1113;padding:1px 5px;border-radius:4px;font-size:12.5px}
+  .note{font-size:12px;color:#6f7b8a;padding:6px 12px;background:#11161c;border-bottom:1px solid #1d232c}
+</style>
+</head>
+<body>
+<div class="bar">
+  <b>ТехноМайнинг 0.2</b>
+  <span class="st" id="st">загрузка…</span>
+  <span class="grow"></span>
+  <button id="reload">Перезагрузить</button>
+  <button data-w="0" class="on">Во всю ширину</button>
+  <button data-w="390">Телефон</button>
+  <button data-w="768">Планшет</button>
+</div>
+<div class="note">
+  Показывается оригинальный <code>index.html</code> приложения 0.2 из репозитория. Шрифты, pdf-lib и Tesseract лежат внутри APK и в репозиторий не выложены — их не будет.
+</div>
+<div class="wrap" id="wrap"><iframe id="f" title="Приложение 0.2"></iframe></div>
+<div id="err" class="err" hidden></div>
+
+<script>
+(function(){
+'use strict';
+var SOURCES = [
+  'https://raw.githubusercontent.com/Isaaccool12/technomining/main/docs/apk-inspect/www/index.html.txt',
+  'https://cdn.jsdelivr.net/gh/Isaaccool12/technomining@main/docs/apk-inspect/www/index.html.txt'
+];
+var st = document.getElementById('st');
+var frame = document.getElementById('f');
+var errBox = document.getElementById('err');
+var wrap = document.getElementById('wrap');
+
+function setStatus(text, cls){
+  st.textContent = text;
+  st.className = 'st' + (cls ? ' ' + cls : '');
+}
+function showErr(html){
+  errBox.hidden = false;
+  errBox.innerHTML = html;
+  wrap.style.display = 'none';
+}
+function showFrame(html, src){
+  errBox.hidden = true;
+  wrap.style.display = 'flex';
+  frame.srcdoc = html;
+  setStatus('загружено ' + Math.round(html.length / 1024) + ' КБ · ' + (src.indexOf('jsdelivr') >= 0 ? 'jsDelivr' : 'raw.githubusercontent'), 'ok');
+}
+
+function fetchWithTimeout(url, ms){
+  return new Promise(function(resolve, reject){
+    var done = false;
+    var timer = setTimeout(function(){
+      if (!done){ done = true; reject(new Error('таймаут')); }
+    }, ms);
+    fetch(url, {cache:'no-store'}).then(function(r){
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    }).then(function(t){
+      if (done) return;
+      done = true; clearTimeout(timer); resolve(t);
+    }).catch(function(e){
+      if (done) return;
+      done = true; clearTimeout(timer); reject(e);
+    });
+  });
+}
+
+function load(){
+  setStatus('загрузка…', '');
+  errBox.hidden = true;
+  var i = 0;
+  function next(){
+    if (i >= SOURCES.length){
+      setStatus('не удалось загрузить', 'bad');
+      showErr(
+        '<h3>Не удалось получить файл приложения</h3>' +
+        '<p>Попытка загрузить <code>docs/apk-inspect/www/index.html.txt</code> из репозитория не удалась: ' +
+        'предпросмотр не имеет доступа к сети или файл переименован.</p>' +
+        '<p>Что сделать: откройте ' +
+        '<code>https://github.com/Isaaccool12/technomining/blob/main/docs/apk-inspect/www/index.html.txt</code>, ' +
+        'нажмите <b>Raw</b>, сохраните файл как <code>index.html</code> и откройте его в браузере — ' +
+        'это и есть приложение 0.2 целиком.</p>'
+      );
+      return;
+    }
+    var url = SOURCES[i++];
+    fetchWithTimeout(url, 20000).then(function(html){
+      if (!html || html.length < 5000) throw new Error('пустой ответ');
+      showFrame(html, url);
+    }).catch(function(){
+      next();
+    });
+  }
+  next();
+}
+
+document.getElementById('reload').addEventListener('click', load);
+Array.prototype.forEach.call(document.querySelectorAll('[data-w]'), function(b){
+  b.addEventListener('click', function(){
+    Array.prototype.forEach.call(document.querySelectorAll('[data-w]'), function(x){ x.classList.remove('on'); });
+    b.classList.add('on');
+    wrap.className = 'wrap' + (b.getAttribute('data-w') === '390' ? ' phone' : b.getAttribute('data-w') === '768' ? ' pad' : '');
+  });
+});
+
+load();
+})();
+</script>
+</body>
+</html>
