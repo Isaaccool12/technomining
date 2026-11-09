@@ -1,0 +1,38 @@
+--- unzip ---
+ extracting: /tmp/apk/res/mipmap-xxxhdpi/ic_launcher.png  
+ extracting: /tmp/apk/resources.arsc  
+  inflating: /tmp/apk/assets/www/DejaVuSans-Bold.ttf  
+  inflating: /tmp/apk/assets/www/DejaVuSans.ttf  
+  inflating: /tmp/apk/assets/www/fontkit.umd.min.js  
+  inflating: /tmp/apk/assets/www/index.html  
+ extracting: /tmp/apk/assets/www/ocr/eng-lang.wasm  
+ extracting: /tmp/apk/assets/www/ocr/rus-lang.wasm  
+  inflating: /tmp/apk/assets/www/ocr/tesseract-core-lstm.wasm.js  
+  inflating: /tmp/apk/assets/www/ocr/tesseract-core-simd-lstm.wasm.js  
+  inflating: /tmp/apk/assets/www/ocr/tesseract.min.js  
+  inflating: /tmp/apk/assets/www/ocr/worker.min.js  
+  inflating: /tmp/apk/assets/www/pdf-lib.min.js  
+  inflating: /tmp/apk/assets/www/pdf.min.js  
+  inflating: /tmp/apk/assets/www/pdf.worker.min.js  
+ extracting: /tmp/apk/assets/www/tm-logo.png  
+  inflating: /tmp/apk/classes.dex    
+  inflating: /tmp/apk/META-INF/ANDROIDD.SF  
+  inflating: /tmp/apk/META-INF/ANDROIDD.RSA  
+  inflating: /tmp/apk/META-INF/MANIFEST.MF  
+--- tree ---
+/tmp/apk
+/tmp/apk/assets
+/tmp/apk/assets/www
+/tmp/apk/META-INF
+/tmp/apk/META-INF/ANDROIDD.RSA
+/tmp/apk/META-INF/MANIFEST.MF
+/tmp/apk/META-INF/ANDROIDD.SF
+/tmp/apk/resources.arsc
+/tmp/apk/res
+/tmp/apk/res/mipmap-xhdpi
+/tmp/apk/res/mipmap-xxhdpi
+/tmp/apk/res/mipmap-hdpi
+/tmp/apk/res/mipmap-xxxhdpi
+/tmp/apk/res/mipmap-mdpi
+/tmp/apk/classes.dex
+/tmp/apk/AndroidManifest.xml

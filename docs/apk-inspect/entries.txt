@@ -1,0 +1,30 @@
+Archive:  src/TechnoMining-0.2-test (1).apk
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+     4092  1980-01-01 00:00   AndroidManifest.xml
+     2550  1980-01-01 00:00   res/mipmap-mdpi/ic_launcher.png
+     3938  1980-01-01 00:00   res/mipmap-hdpi/ic_launcher.png
+     5425  1980-01-01 00:00   res/mipmap-xhdpi/ic_launcher.png
+     8284  1980-01-01 00:00   res/mipmap-xxhdpi/ic_launcher.png
+    11007  1980-01-01 00:00   res/mipmap-xxxhdpi/ic_launcher.png
+     1496  1980-01-01 00:00   resources.arsc
+   705684  1980-01-01 00:00   assets/www/DejaVuSans-Bold.ttf
+   757076  1980-01-01 00:00   assets/www/DejaVuSans.ttf
+   758440  1980-01-01 00:00   assets/www/fontkit.umd.min.js
+   353803  1980-01-01 00:00   assets/www/index.html
+  2952873  1980-01-01 00:00   assets/www/ocr/eng-lang.wasm
+  2679598  1980-01-01 00:00   assets/www/ocr/rus-lang.wasm
+  3954181  1980-01-01 00:00   assets/www/ocr/tesseract-core-lstm.wasm.js
+  3954569  1980-01-01 00:00   assets/www/ocr/tesseract-core-simd-lstm.wasm.js
+    62961  1980-01-01 00:00   assets/www/ocr/tesseract.min.js
+   111162  1980-01-01 00:00   assets/www/ocr/worker.min.js
+   525099  1980-01-01 00:00   assets/www/pdf-lib.min.js
+   320004  1980-01-01 00:00   assets/www/pdf.min.js
+  1087212  1980-01-01 00:00   assets/www/pdf.worker.min.js
+    21411  1980-01-01 00:00   assets/www/tm-logo.png
+    23020  2026-11-06 18:50   classes.dex
+     2346  2026-11-06 23:50   META-INF/ANDROIDD.SF
+     1328  2026-11-06 23:50   META-INF/ANDROIDD.RSA
+     2219  2026-11-06 23:50   META-INF/MANIFEST.MF
+---------                     -------
+ 18309778                     25 files
