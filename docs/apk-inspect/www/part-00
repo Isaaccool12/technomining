@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#1f2933">
+<title>ТехноМайнинг — Сервисный инженер (прототип)</title>
+<style>
+:root{color-scheme:light dark;--bg:#f3f4f6;--card:#fff;--ink:#1c2128;--mut:#6b7280;--line:#e2e5ea;--acc:#e8700a;--acc2:#fff3e8;--tag:#9a4700;--ok:#15803d;--okb:#e7f6ec;--bad:#c62828;--badb:#fdecec;--sk:#8a8f98;--skb:#f0f1f3;
+--inp:#fff;--inpbd:#cfd4db;--ghost:#e9ecf0;--soft:#f8f9fb;--soft2:#f3f4f6;--warnbg:#fff8e6;--warnbd:#f1d68a;--okrow:#f6fcf8;--badrow:#fff6f6;--offbd:#f3c9c9;--tripbg:#fffaf5;--inbg:#ffe2c6;--inbd:#f5b47a;--dupbg:#fff3b0;--dupbd:#e0b400;--dupin:#fff6cc;
+--pinbg:#e8f1fb;--pinfg:#1f4f82;--freebg:#eef3fb;--vsoft:#faf5ff;--vbd:#e3d2f3;--violet:#6a1b9a;--info:#2f5d8a;--strong:#1f2933;--onstrong:#fff;--btn:#2b3640;--slotbd:#c9ced6;--imgph:#ddd;--mark:#ffe082;--shadow:var(--shadow)}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1318;--card:#181d24;--ink:#e6e8eb;--mut:#9aa3ae;--line:#2b323c;--acc:#f08a2a;--acc2:#3a2614;--tag:#f5b46b;--ok:#4ade80;--okb:#12301e;--bad:#f87171;--badb:#3a1717;--sk:#8a929c;--skb:#232930;
+--inp:#11161c;--inpbd:#3a4350;--ghost:#262d36;--soft:#1e242c;--soft2:#20262e;--warnbg:#2f2610;--warnbd:#6b5418;--okrow:#13261a;--badrow:#2a1517;--offbd:#5a2a2a;--tripbg:#2a1f14;--inbg:#4a2f15;--inbd:#7a4a1f;--dupbg:#4a3d0a;--dupbd:#8a7010;--dupin:#3a3008;
+--pinbg:#16283d;--pinfg:#9cc3ec;--freebg:#16283d;--vsoft:#221a2d;--vbd:#3d2a52;--violet:#c084fc;--info:#7fb2e5;--strong:#e6e8eb;--onstrong:#111;--btn:#36414d;--slotbd:#3d4652;--imgph:#2a3038;--mark:#7a5d00;--shadow:rgba(0,0,0,.6)}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);-webkit-tap-highlight-color:transparent}
+header{position:sticky;top:0;z-index:20;background:#1f2933;color:#fff;display:flex;align-items:center;gap:10px;padding:10px 14px}
+header .t{font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header .t small{display:block;font-weight:400;opacity:.65;font-size:12px}
+.back,.ubtn{background:none;border:0;color:#fff;font-size:24px;padding:0 6px;cursor:pointer}
+.ubtn{font-size:13px;background:#344150;border-radius:20px;padding:6px 10px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#net{font-size:12px;padding:5px 10px;border-radius:20px;white-space:nowrap}
+#net.on{background:#1d6b3a}#net.off{background:#a24a00}#net.sync{background:#2f5d8a}
+main{max-width:1100px;margin:0 auto;padding:14px 14px 110px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+h2{margin:0 0 10px;font-size:20px}h3{margin:20px 0 10px;font-size:16px}h4{margin:16px 0 8px;font-size:14px;color:var(--mut)}
+label{display:block;margin:10px 0;font-size:13px;color:var(--mut)}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);padding:11px 12px;border:1px solid var(--inpbd);border-radius:10px;background:var(--inp);margin-top:4px}
+input[type=color]{padding:2px;height:42px;width:60px}
+textarea{min-height:64px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);border-color:transparent}
+input.dup{background:var(--dupin);border-color:var(--dupbd)}
+label.chk{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:14px;margin:8px 0;cursor:pointer}
+label.chk input{width:22px;height:22px;margin:0;accent-color:var(--acc)}
+.btn{font:inherit;border:0;border-radius:10px;padding:11px 16px;background:var(--btn);color:#fff;cursor:pointer;font-weight:600}
+.btn.pri{background:var(--acc)}.btn.ghost{background:var(--ghost);color:var(--ink)}.btn.red{background:var(--bad)}
+.btn.sm{padding:7px 11px;font-size:13px}.btn.big{padding:15px 18px;font-size:16px;flex:1}
+.btn:disabled{opacity:.4}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.muted{color:var(--mut)}.small{font-size:13px}.hint{font-size:13px;color:var(--mut);margin:4px 0 8px}
+.tag{display:inline-block;background:var(--acc2);color:var(--tag);font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px;margin-bottom:6px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}.kv span{color:var(--mut)}
+.search{margin:14px 0}
+.acard{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-left:6px solid var(--mc,#999);border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;font:inherit;color:inherit}
+.acard .i{flex:1;min-width:0}.acard b{font-size:16px}.acard .m{color:var(--mut);font-size:13px;margin-top:3px}
+.logo{flex:none;width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:17px;overflow:hidden;background:var(--mc,#999)}
+.logo img{width:100%;height:100%;object-fit:contain;background:var(--card)}
+.logo.sm{width:30px;height:30px;font-size:12px;border-radius:8px}
+.dupm{background:var(--dupbg);padding:0 5px;border-radius:5px;outline:1px solid var(--dupbd)}
+.kinds{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.kind{font:inherit;text-align:left;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px;cursor:pointer;color:inherit}
+.kind:hover{border-color:var(--acc)}.kind b{display:block;font-size:16px;margin-bottom:4px}.kind small{color:var(--mut)}
+.rrow{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;flex-wrap:wrap}
+.rrow .i{flex:1;min-width:200px}.rrow .m{font-size:13px;color:var(--mut)}
+.st-d{color:var(--tag)}.st-ok{color:var(--ok)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:6px;scrollbar-width:thin}
+.chip{flex:none;font:inherit;font-size:13px;border:1px solid var(--line);background:var(--card);border-radius:20px;padding:7px 12px;cursor:pointer;color:var(--ink)}
+.chip.done{background:var(--okb);border-color:var(--ok)}.chip.done::before{content:"✓ ";color:var(--ok)}
+.chip.skipped{background:var(--skb);color:var(--sk);text-decoration:line-through}
+.chip.cur{background:var(--strong);color:var(--onstrong);border-color:var(--strong);text-decoration:none}
+.navbar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--card);border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:center}
+.navbar .btn{flex:1;max-width:260px}
+.slots,.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.slot{border:2px dashed var(--slotbd);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;align-items:stretch;justify-content:center;min-height:170px;text-align:center}
+.slt{font-weight:700}
+.ph{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.ph.def{border:2px solid var(--bad)}
+.ph img{width:100%;height:150px;object-fit:cover;display:block;cursor:zoom-in;background:var(--imgph)}
+.phb{padding:8px}.phb textarea{min-height:48px;font-size:13px;padding:8px}
+.phl{font-size:12px;font-weight:700;color:var(--mut)}.ph.def .phl{color:var(--bad)}
+.phb .row{margin-top:4px;justify-content:space-between}.phb label.chk{font-size:13px;margin:0}
+.addrow{display:flex;gap:8px;margin:8px 0 12px}.addrow .btn{flex:1}
+.mode{display:flex;gap:6px;margin-bottom:6px}
+.seg{flex:1;font:inherit;font-weight:600;border:2px solid var(--line);background:var(--card);border-radius:10px;padding:11px;cursor:pointer;color:var(--ink)}
+.seg.on{border-color:var(--strong);background:var(--strong);color:var(--onstrong)}.seg.red.on{border-color:var(--bad);background:var(--bad);color:#fff}
+.segs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.segs .seg{flex:none;padding:6px 12px;font-size:13px}
+.mg{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.mgh{display:flex;align-items:center;gap:10px;padding:12px;background:var(--soft);cursor:pointer}
+.mgh b{flex:1}.mgh .c{font-size:12px;color:var(--mut)}
+.mrow{padding:12px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 210px;gap:8px 12px;align-items:center}
+.mrow.s-ok{background:var(--okrow)}.mrow.s-bad{background:var(--badrow)}.mrow.s-skip{opacity:.55}
+.mn{font-weight:600}.norm{font-weight:400;font-size:12px;color:var(--mut)}
+.mi{display:flex;gap:6px;align-items:center}.mi input{margin:0;font-size:17px;font-weight:600}
+.mx{grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.mx label.chk{margin:0;font-size:13px}
+.mext{grid-column:1/-1}
+.badge{font-size:12px;font-weight:700;padding:4px 8px;border-radius:8px;white-space:nowrap;min-width:84px;text-align:center}
+.b-ok{background:var(--okb);color:var(--ok)}.b-bad{background:var(--badb);color:var(--bad)}.b-none{background:var(--skb);color:var(--mut)}.b-skip{background:var(--skb);color:var(--sk)}.b-free{background:var(--freebg);color:var(--info)}
+.calh{display:flex;align-items:center;justify-content:space-between;margin:8px 0}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;max-width:440px}
+.cw{font-size:12px;color:var(--mut);text-align:center}.cw.we{color:var(--bad)}
+.cd{position:relative;font:inherit;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:10px 0;cursor:pointer;color:var(--ink)}
+.cd.we{color:var(--bad)}
+.cd.in{background:var(--inbg);border-color:var(--inbd)}
+.cd.edge{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:700}
+.cd.pend{outline:3px solid var(--strong)}
+.cd.wk::after{content:"";position:absolute;right:4px;top:4px;width:8px;height:8px;border-radius:50%;background:var(--violet);box-shadow:0 0 0 2px var(--card)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin:8px 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.trip{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;margin:6px 0;background:var(--tripbg)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.crow{display:grid;grid-template-columns:1fr 100px 100px 40px;gap:6px;align-items:center;margin-bottom:6px}
+.crow input,.crow select{margin:0}
+.irow{display:grid;grid-template-columns:2fr 70px 80px 80px 80px 36px;gap:6px;align-items:center;margin-bottom:6px}
+.irow input{margin:0;padding:8px;font-size:14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:12px 0}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.tile b{display:block;font-size:24px}.tile span{font-size:12px;color:var(--mut)}
+.tile.bad b{color:var(--bad)}.tile.ok b{color:var(--ok)}
+.th{margin:0;border-radius:10px;overflow:hidden;background:var(--card);border:1px solid var(--line);cursor:zoom-in}
+.th.def{border:2px solid var(--bad)}
+.th img{width:100%;height:140px;object-fit:cover;display:block}
+.th figcaption{font-size:12px;padding:6px 8px;color:var(--mut)}
+.th.def figcaption b{color:var(--bad)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--mut);font-weight:600}
+td.n{white-space:nowrap;font-variant-numeric:tabular-nums}
+tr.s-bad td{background:var(--badrow)}tr.gr td{background:var(--soft2);font-weight:700}
+.sumlist div{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.warn{background:var(--warnbg);border:1px solid var(--warnbd);border-radius:10px;padding:10px;font-size:13px;margin:8px 0}
+.banner{background:var(--badb);color:var(--bad);padding:10px 14px;font-size:13px;text-align:center}
+#zoom{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;color:#fff}
+#zoom img{max-width:100%;max-height:78vh;object-fit:contain;border-radius:6px}
+#zoom .cap{margin-top:10px;max-width:800px;text-align:center}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1f2933;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
+#toast.show{opacity:1}
+#umenu{position:fixed;top:56px;right:10px;z-index:40;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 30px var(--shadow);padding:12px;min-width:240px}
+#umenu .btn{width:100%;margin-top:6px}
+.doc{white-space:pre-wrap;font-size:15px;line-height:1.6}
+.drow{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.drow .i{flex:1;min-width:180px}
+.pdfwrap{position:relative;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.pdfwrap canvas{display:block;width:100%;margin-bottom:8px;border:1px solid var(--line);background:var(--card)}
+.wm{color:var(--ink);position:absolute;inset:0;pointer-events:none;overflow:hidden;display:flex;flex-wrap:wrap;align-content:flex-start;gap:70px 40px;padding:30px;opacity:.13;font-weight:700;font-size:15px;color:#000;transform:rotate(-18deg);transform-origin:center}
+.login{max-width:420px;margin:30px auto}
+.lmark{width:64px;height:64px;border-radius:16px;background:var(--acc);color:#fff;font-weight:800;font-size:24px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px}
+.tabs .seg{flex:none}
+.urow{display:grid;grid-template-columns:1fr 160px 110px 120px 40px;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.urow select{margin:0}
+.q4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.q4 label{margin:4px 0}
+.prop{border-top:1px solid var(--line);padding:10px 0}.prop:first-of-type{border-top:0}
+.sres{display:block;width:100%;text-align:left;font:inherit;font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:6px;cursor:pointer;color:var(--ink)}
+/* страницы PDF */
+.pgph{position:relative;background:#fff;border:1px solid var(--line);margin-bottom:8px;overflow:hidden}.pgph canvas{display:block;width:100%;margin:0;border:0}
+.pgph .pgno{position:absolute;left:50%;top:40%;transform:translateX(-50%);color:#9aa3ae;font-size:20px}
+.pgph.flash{outline:4px solid var(--acc)}.pgph canvas~.pgno{display:none}
+.wm1{position:absolute;inset:0;pointer-events:none;display:flex;flex-direction:column;justify-content:space-around;align-items:center;transform:rotate(-24deg);opacity:.12;font-weight:700;font-size:16px;color:#000}
+.ntfloat{position:fixed;right:12px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:25;display:flex;gap:6px}.ntfloat .btn{box-shadow:0 2px 10px var(--shadow);border-radius:20px;padding:10px 14px;font-size:15px}
+.pgnotes{position:absolute;right:6px;top:6px;display:flex;gap:4px;z-index:2}.pgnotes button{font:inherit;font-size:13px;border:0;border-radius:14px;padding:4px 9px;background:var(--acc);color:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:30;max-height:62vh;display:flex;flex-direction:column;background:var(--card);border-top:1px solid var(--line);border-radius:16px 16px 0 0;box-shadow:0 -6px 24px var(--shadow);padding:10px 14px calc(10px + env(safe-area-inset-bottom));max-width:1100px;margin:0 auto}
+.shh{display:flex;justify-content:space-between;align-items:center;gap:8px}.shb{overflow:auto;padding-top:6px}
+.nrow{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line)}.nrow .i{flex:1;min-width:0}.nrow.hid{opacity:.6}
+.ncform{border-top:1px solid var(--line);padding-top:8px;margin-top:6px}.ncform textarea{min-height:56px}
+.mrow.mgrid{grid-template-columns:1fr auto}.gwrap{overflow-x:auto;margin:4px 0}.gtbl{border-collapse:collapse;font-size:13px;min-width:100%}.gtbl th,.gtbl td{border:1px solid var(--line);padding:3px 4px;text-align:center;white-space:nowrap}.gtbl th{background:var(--soft2);font-weight:600}
+.gtbl input{width:72px;padding:6px 4px;margin:0;font-size:15px;text-align:center;border-radius:6px}.gtbl .gd{background:var(--soft)}input.g-bad,td.g-bad{background:var(--badb)!important;color:var(--bad);font-weight:700}input.g-ok,td.g-ok{background:var(--okrow)}
+.annbtn{position:absolute;right:6px;top:6px;border:0;border-radius:50%;width:36px;height:36px;background:rgba(0,0,0,.55);color:#fff;font-size:16px;cursor:pointer}
+.remtag{position:absolute;left:6px;top:6px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;padding:2px 6px;border-radius:8px}
+#ann{position:fixed;inset:0;z-index:60;background:#111;display:flex;flex-direction:column;padding:10px}.anntools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.anntools .seg{flex:none;padding:8px 10px;color:#fff;background:#222;border-color:#444}.anntools .seg.on{background:#e8700a;border-color:#e8700a}
+.anncol{display:flex;gap:6px}.anncol button{width:30px;height:30px;border-radius:50%;border:3px solid #333;cursor:pointer}.anncol button.on{border-color:#fff}
+.anncv{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-top:8px}.anncv canvas{max-width:100%;max-height:100%;touch-action:none;background:#000}
+.anntxt{position:fixed;left:10px;right:10px;bottom:80px;display:flex;gap:6px;background:#222;padding:8px;border-radius:10px}.anntxt input{margin:0}
+#micb{position:fixed;left:12px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:45;width:52px;height:52px;border-radius:50%;border:0;background:var(--acc);color:#fff;font-size:24px;box-shadow:0 2px 10px var(--shadow);cursor:pointer}#micb.rec{background:var(--bad);animation:pulse 1s infinite}@keyframes pulse{50%{transform:scale(1.12)}}
+body.big{font-size:17px}body.big .btn{padding:15px 20px;font-size:17px;min-height:52px}body.big .btn.sm{padding:11px 14px;font-size:15px;min-height:44px}body.big input,body.big select,body.big textarea{font-size:18px;padding:14px}body.big label.chk input{width:28px;height:28px}body.big .chip{padding:10px 14px;font-size:15px}body.big .gtbl input{width:84px;font-size:17px;padding:9px 4px}body.big .navbar .btn{min-height:56px}
+#pdfprev{position:fixed;inset:0;z-index:58;background:#3a3f45;display:flex;flex-direction:column}.pph{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1f2933;color:#fff}.pph b{flex:1}.ppb{flex:1;overflow:auto;padding:8px;display:flex;flex-direction:column;align-items:center;gap:10px}.ppb canvas{background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.4)}.ppf{display:flex;gap:8px;justify-content:center;padding:10px calc(10px + env(safe-area-inset-bottom));background:#1f2933}
+.vplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;padding-left:4px}.vdur{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.65);color:#fff;font-size:12px;padding:2px 6px;border-radius:6px}
+.toi{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:6px 0;background:var(--card)}.toi.ok{border-left:5px solid var(--ok)}.toi.no{border-left:5px solid var(--bad);background:var(--badb)}.toi.na{opacity:.7}.toi .tot{margin-bottom:6px}.toi input{margin:6px 0 0}.tobtn{margin:0}.tobtn .seg{padding:6px 8px;font-size:13px}.tored{display:grid;grid-template-columns:130px 1fr 150px auto;gap:6px;align-items:center;margin:6px 0}.tored input,.tored select{margin:0}@media(max-width:560px){.tored{grid-template-columns:1fr 1fr auto;border-bottom:1px solid var(--line);padding-bottom:8px}.tored input{grid-column:1/-1;order:-1}}.badge.warnb{background:#fff1d6;color:#8a5a00}
+.ocrbar{border:1px solid var(--line);background:var(--soft2);border-radius:10px;padding:8px 10px;margin:0 0 8px;font-size:14px}.ocrbar.ok{border-color:var(--ok);background:var(--okb)}
+.mgroup{border:1px solid var(--line);border-radius:14px;background:var(--card);margin-bottom:10px;overflow:hidden}.mgroup>summary{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;list-style:none;background:var(--soft2)}.mgroup>summary::-webkit-details-marker{display:none}.mgroup>summary::after{content:'▾';margin-left:4px;color:var(--mut)}.mgroup:not([open])>summary::after{content:'▸'}.mgi{font-size:22px}.mgt{flex:1;min-width:0}.mgl{padding:8px 8px 0}.mgl .acard{margin-bottom:8px}.mgfree{margin:14px 2px 8px;color:var(--mut)}
+mark{background:var(--mark);color:var(--ink);padding:0 1px}canvas.flash{outline:4px solid var(--acc)}
+.cnt{display:inline-block;background:var(--bad);color:#fff;border-radius:10px;font-size:12px;padding:1px 7px;margin-left:4px}
+.logo{border:1px solid rgba(127,127,127,.15)}
+#dlg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55;display:flex;align-items:center;justify-content:center;padding:14px}
+.dlgbox{background:var(--card);border-radius:16px;padding:18px;max-width:480px;width:100%;max-height:90vh;overflow:auto}
+.mkrow{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.mkrow .row{grid-column:1/-1;margin-top:0}.mkrow input{margin:2px 0}
+.pin{display:inline-block;background:var(--pinbg);color:var(--pinfg);font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px}
+.rteam{background:var(--soft)}.rteam .row{margin-top:6px}
+.edits{font-size:12px;color:var(--violet);margin:-4px 0 8px}
+.ottbl td,.ottbl th{padding:6px;font-size:13px}.ottbl tr.we td{background:var(--badrow)}.ottbl tr.has td{font-weight:600}.ottbl tr.tot td{background:var(--soft2);font-weight:700}
+.otv{color:var(--violet)}
+.dayc{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px;background:var(--card)}.dayc.off{background:var(--badrow);border-color:var(--offbd)}
+.dg{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end}.dg label{margin:2px 0}.dg input{padding:8px}.dg label.chk{margin-bottom:10px}
+@media(max-width:560px){.dg{grid-template-columns:1fr 1fr}.dg label.chk{grid-column:1/-1;margin:0}}
+.chart{width:100%;height:auto;display:block}
+.filters{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:-6px 0 12px}.filters select{margin:0;padding:9px;font-size:14px}
+@media(max-width:560px){.filters{grid-template-columns:1fr 1fr}.q4{grid-template-columns:1fr 1fr}.mrow{grid-template-columns:1fr}.two{grid-template-columns:1fr}.slots,.grid{grid-template-columns:1fr 1fr}.ph img,.th img{height:120px}.slot{min-height:150px;padding:10px}.crow{grid-template-columns:1fr 70px 80px 36px}.irow{grid-template-columns:1fr 1fr 1fr}.irow .nm{grid-column:1/-1}.urow{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div id="banner"></div>
+<header><button class="back" id="back" data-act="back" hidden>‹</button><div class="t" id="ttl">ТехноМайнинг</div><span id="net"></span><button class="ubtn" id="bell" data-act="bell" hidden>🔔</button><button class="ubtn" id="ubtn" data-act="umenu" hidden></button></header>
+<main id="app"></main>
+<div id="navslot"></div>
+<div id="toast"></div>
+<input type="file" id="fCam" accept="image/*" capture="environment" hidden>
+<input type="file" id="fGal" accept="image/*,video/*" multiple hidden>
+<input type="file" id="fVid" accept="video/*" capture="environment" hidden>
+<input type="file" id="fDoc" accept="application/pdf" hidden>
+<script>
+/* ====== Начальные данные (ДЕМО — не использовать в работе) ====== */
+const TYPES=['ДВС','АКПП','КПП','Редуктор','Мост','Гидротрансформатор','Раздаточная коробка','Гидронасос','Другое'];
+const PALETTE=['#b71c1c','#1565c0','#00695c','#283593','#6a1b9a','#ef6c00','#2e7d32','#4e342e','#00838f','#ad1457'];
+const SEED=[
+ ['Cummins','#b71c1c',[{model:'QSK19',type:'ДВС',groups:[
+  ['cb','Блок цилиндров',[['Диаметр гильзы (верх)','мм',158.90,158.88,158.95],['Диаметр гильзы (низ)','мм',158.90,158.88,158.95],['Выступание гильзы над блоком','мм',0.10,0.05,0.15]]],
+  ['kv','Коленчатый вал',[['Коренная шейка №1','мм',139.70,139.67,139.72],['Коренная шейка №4','мм',139.70,139.67,139.72],['Шатунная шейка №1','мм',101.60,101.57,101.62],['Осевой люфт','мм',0.25,0.13,0.38]]],
+  ['gb','ГБЦ и клапаны',[['Неплоскостность ГБЦ','мм',0,0,0.10],['Утопание впускного клапана','мм',1.0,0.7,1.5],['Диаметр стержня клапана','мм',11.0,10.97,11.0]]],
+  ['pt','Поршневая группа',[['Зазор в замке 1-го кольца','мм',0.50,0.40,0.70],['Диаметр поршневого пальца','мм',62.0,61.99,62.0]]]],
+  docs:[['qsk19-sm','Руководство по ремонту QSK19',640],['qsk19-om','Руководство по эксплуатации и ТО QSK19',210]]}]],
+ ['ЯМЗ','#1565c0',[{model:'ЯМЗ-238',type:'ДВС',groups:[
+  ['kv','Коленчатый вал',[['Коренная шейка','мм',110.00,109.985,110.0],['Шатунная шейка','мм',88.00,87.985,88.0],['Осевой люфт КВ','мм',0.15,0.08,0.23]]],
+  ['cb','Блок цилиндров',[['Диаметр гильзы','мм',130.00,130.00,130.06]]],['gb','ГБЦ',[['Неплоскостность ГБЦ','мм',0,0,0.05]]]],docs:[['yamz-sm','Руководство по ремонту ЯМЗ-238',320]]}]],
+ ['Allison','#00695c',[{model:'4500',type:'АКПП',groups:[
+  ['fr','Пакеты фрикционов',[['Зазор пакета C1','мм',2.0,1.5,2.6],['Зазор пакета C2','мм',1.8,1.4,2.4],['Толщина фрикционного диска','мм',2.5,2.3,2.6]]],
+  ['pm','Масляный насос',[['Зазор шестерня — корпус','мм',0.10,0.05,0.15]]],['gt','Гидротрансформатор',[['Осевой люфт турбины','мм',0.5,0.2,0.8]]]],docs:[['al-sm','Service Manual Allison 4000/4500',480]]}]],
+ ['ZF','#283593',[{model:'6WG260',type:'КПП',groups:[
+  ['fr','Муфты',[['Зазор муфты K1','мм',2.4,2.1,2.7],['Зазор муфты K2','мм',2.4,2.1,2.7],['Зазор муфты KV','мм',2.4,2.1,2.7]]],
+  ['vl','Валы и подшипники',[['Осевой люфт входного вала','мм',0.05,0,0.10],['Биение выходного фланца','мм',0,0,0.08]]]],docs:[['zf-rm','Руководство по ремонту ZF 6WG260',390]]}]],
+ ['Komatsu','#6a1b9a',[{model:'HD785 задний мост',type:'Мост',groups:[
+  ['gp','Главная передача',[['Боковой зазор пары','мм',0.35,0.25,0.45],['Момент преднатяга подшипников','Н·м',3.0,2.0,4.0]]],
+  ['br','Бортовой редуктор',[['Зазор в зацеплении сателлитов','мм',0.4,0.2,0.6]]]],docs:[['hd785-sm','Shop Manual HD785 — силовая передача',560]]}]]
+];
+/* Komatsu 6D170-2 (S/SA/SAA6D170-2): нормативы техобслуживания из Shop Manual SRBM008104 (2000), раздел 14.
+   Диапазон min…max = допустимые значения: для валов — от ремонтного предела до верхнего допуска, для отверстий — от нижнего допуска до ремонтного предела, для зазоров — от нормативного минимума до предельного зазора. */
+const K6D170=[
+ ['hd','Головка цилиндра',[['Деформация привалочной поверхности головки','мм',0,0,0.10,'14-4'],['Выступание форсунки','мм',4.0,3.7,4.3,'14-4']]],
+ ['vl','Клапаны и направляющие',[['Утопание впускного клапана','мм',null,0.97,2.1,'14-5'],['Утопание выпускного клапана','мм',null,0.97,2.1,'14-5'],['Толщина головки впускного клапана','мм',3.4,2.9,3.4,'14-5'],['Толщина головки выпускного клапана','мм',3.5,3.1,3.5,'14-5'],
+  ['Наружный диаметр стержня впускного клапана','мм',12,11.90,11.94,'14-5'],['Наружный диаметр стержня выпускного клапана','мм',12,11.80,11.908,'14-5'],['Внутренний диаметр направляющей клапана (после запрессовки)','мм',12,11.981,12.10,'14-5']]],
+ ['xh','Крейцкопф и направляющая',[['Внутренний диаметр крейцкопфа','мм',15,15.05,15.21,'14-6'],['Наружный диаметр направляющей крейцкопфа','мм',15,15.00,15.039,'14-6'],['Зазор направляющая — крейцкопф','мм',null,0.011,0.072,'14-6']]],
+ ['tp','Толкатель распредвала',[['Внутренний диаметр ролика толкателя','мм',19.0,19.157,19.2,'14-7'],['Наружный диаметр ролика толкателя','мм',41.25,41.0,41.275,'14-7']]],
+ ['cb','Блок цилиндров',[['Внутренний диаметр отверстия под коренной подшипник','мм',148,147.999,148.025,'14-8'],['Зазор коренной подшипник — шейка коленвала','мм',null,0.076,0.32,'14-9'],['Натяг крышки коренного подшипника в блоке','мм',null,0.05,0.159,'14-9'],
+  ['Внутренний диаметр втулки распредвала','мм',72,72.0,72.10,'14-9'],['Зазор распредвал — втулка','мм',null,0.080,0.24,'14-9'],['Деформация верхней плоскости блока','мм',0,0,0.15,'14-9']]],
+ ['ln','Гильза цилиндра',[['Выступание гильзы над блоком','мм',null,0.07,0.15,'14-10'],['Разность выступания гильз разных цилиндров','мм',0,0,0.05,'14-10'],['Внутренний диаметр гильзы','мм',170,170.0,170.24,'14-10'],['Овальность гильзы','мм',0,0,0.08,'14-10'],['Цилиндричность гильзы','мм',0,0,0.08,'14-10'],
+  ['Наружный диаметр гильзы (низ раззенковки)','мм',194.59,194.565,194.615,'14-10'],['Наружный диаметр гильзы (у раззенковки)','мм',205.99,205.965,206.015,'14-10'],['Наружный диаметр гильзы (у уплотнительного кольца)','мм',190.4,190.34,190.40,'14-10'],['Неровность глубины раззенкованного отверстия','мм',0,0,0.03,'14-10']]],
+ ['kv','Коленвал (STD)',[['Наружный диаметр коренной шейки, STD','мм',140.00,139.91,140.00,'14-11'],['Наружный диаметр шатунной шейки, STD','мм',108.00,107.91,108.00,'14-11'],['Овальность коренной шейки','мм',0,0,0.085,'14-11'],['Овальность шатунной шейки','мм',0,0,0.065,'14-11'],
+  ['Осевой (торцевой) зазор коленвала','мм',null,0.14,0.69,'14-11'],['Толщина коренного вкладыша (в центре), STD','мм',4,3.90,3.962,'14-11'],['Прогиб коленвала (по индикатору)','мм',0,0,0.09,'14-11']]],
+ ['cm','Распредвал',[['Высота кулачка, впуск','мм',62,61.37,62.414,'14-12'],['Высота кулачка, выпуск','мм',61,59.64,60.679,'14-12'],['Наружный диаметр шейки распредвала','мм',72,71.86,71.92,'14-12'],['Осевой зазор распредвала','мм',null,0.075,0.40,'14-12'],['Прогиб распредвала (по индикатору)','мм',0,0,0.20,'14-12']]],
+ ['gr','Механизм газораспределения',[['Боковой зазор: шестерня КВ — промежуточная (A)','мм',null,0.141,0.6,'14-13'],['Боковой зазор: основная промежуточная (большая) — промежуточная (B)','мм',null,0.130,0.6,'14-13'],['Боковой зазор: основная промежуточная (малая) — шестерня распредвала (C)','мм',null,0.129,0.6,'14-13'],
+  ['Боковой зазор: основная промежуточная (малая) — шестерня ТНВД (D)','мм',null,0.101,0.6,'14-13'],['Зазор втулка основной промежуточной шестерни — вал','мм',null,0.025,0.25,'14-13'],['Осевой зазор основной промежуточной шестерни','мм',null,0.11,0.4,'14-13'],['Осевой зазор промежуточной шестерни масляного насоса','мм',null,0.10,0.4,'14-13']]],
+ ['ps','Поршень (тип FCD)',[['Наружный диаметр поршня (3 мм от основания, 20 °C)','мм',170,169.79,169.925,'14-15'],['Зазор в замке верхнего компрессионного кольца','мм',null,0.50,1.8,'14-15'],['Зазор в замке 2-го компрессионного кольца','мм',null,0.45,1.8,'14-15'],['Зазор в замке маслосъёмного кольца','мм',null,0.50,1.8,'14-15'],
+  ['Внутренний диаметр бобышки поршневого пальца','мм',68,68.034,68.044,'14-15'],['Наружный диаметр поршневого пальца','мм',68,67.994,68.0,'14-15']]],
+ ['cr','Шатун',[['Зазор втулка шатуна — поршневой палец','мм',null,0.050,0.11,'14-16'],['Внутренний диаметр большой головки шатуна','мм',115,115.0,115.025,'14-16'],['Зазор вкладыш шатуна — шейка коленвала','мм',null,0.060,0.34,'14-16'],['Толщина вкладыша шатуна (центр), STD','мм',3.5,3.41,3.471,'14-16'],
+  ['Изгиб шатуна','мм',0,0,0.10,'14-16'],['Скручивание шатуна','мм',0,0,0.25,'14-16'],['Масса шатуна','кг',10.29,10.26,10.32,'14-16']]],
+ ['op','Масляный насос',[['Осевой зазор шестерни насоса','мм',null,0.040,0.092,'14-17'],['Радиальный зазор шестерни насоса','мм',null,0.15,0.27,'14-17'],['Зазор ведущий вал — втулка ведомой шестерни','мм',null,0.032,0.077,'14-17'],['Зазор ведущий вал — корпус','мм',null,0.012,0.059,'14-17']]],
+ ['ov','Клапаны системы смазки',[['Давление открытия главного разгрузочного клапана','кг/см²',null,4.0,4.6,'14-18'],['Давление регуляторного клапана','кг/см²',null,7.2,8.8,'14-18'],['Давление клапана охлаждения поршня','кг/см²',null,1.2,1.6,'14-18'],['Давление перепускного клапана маслоохладителя','кг/см²',null,4.0,5.0,'14-18']]],
+ ['tc','Турбокомпрессор KTR130',[['Торцевой (осевой) зазор ротора','мм',null,0.08,0.18,'14-2-1'],['Радиальный люфт ротора','мм',null,0.25,0.60,'14-2-1']]],
+ ['wp','Водяной насос',[['Зазор крыльчатка — корпус','мм',null,0.23,0.66,'14-19']]]
+];
+const US=(base,step,lo,hi,lim,mins)=>['STD','0,25 US','0,50 US','0,75 US','1,00 US'].map((n,i)=>{const nom=+(base+step*i).toFixed(3);return{n,nom,min:mins?mins[i]:+(nom-base+lim).toFixed(3),max:+(nom+hi).toFixed(3)}});
+const K6D_EXT={'k6d-ln-2':{grid:{rows:6,rowName:'Цилиндр',pos:['Верх','Середина','Низ'],dirs:['A','B'],ov:0.08,tp:0.08}},
+ 'k6d-ln-0':{grid:{rows:6,rowName:'Цилиндр',pos:[''],dirs:[''],ov:null,tp:null}},
+ 'k6d-kv-0':{name:'Наружный диаметр коренной шейки',sizes:US(140,-0.25,0,0,139.91),grid:{rows:7,rowName:'Коренная шейка',pos:['Перед','Зад'],dirs:['A','B'],ov:0.085,tp:null}},
+ 'k6d-kv-1':{name:'Наружный диаметр шатунной шейки',sizes:US(108,-0.25,0,0,107.91),grid:{rows:6,rowName:'Шатунная шейка',pos:['Перед','Зад'],dirs:['A','B'],ov:0.065,tp:null}},
+ 'k6d-cr-1':{grid:{rows:6,rowName:'Шатун',pos:[''],dirs:['A','B'],ov:null,tp:null}},
+ 'k6d-cr-3':{name:'Толщина вкладыша шатуна (центр)',sizes:US(3.5,0.125,0,-0.029,3.41,[3.41,3.54,3.66,3.79,3.91]),grid:{rows:6,rowName:'Шатун',pos:[''],dirs:[''],ov:null,tp:null}},
+ 'k6d-ps-0':{grid:{rows:6,rowName:'Поршень',pos:[''],dirs:[''],ov:null,tp:null}}};
+function applyK6dExt(m){m.groups.forEach(g=>g.items.forEach(it=>{const e=K6D_EXT[it.id];if(e&&!it.extApplied){Object.assign(it,JSON.parse(JSON.stringify(e)));it.extApplied=1}}))}
+function k6dModel(makerId){return{id:'md-k6d170-2',makerId,model:'6D170-2',type:'ДВС',src:'Shop Manual SRBM008104 (2000), раздел 14',groups:K6D170.map(([gid,gn,its])=>({id:gid,name:gn,items:its.map((t,i)=>({id:'k6d-'+gid+'-'+i,name:t[0],unit:t[1],nom:t[2],min:t[3],max:t[4],ref:t[5]}))})),docs:[]}}
+function seedCatalog(){const makers=[],models=[];SEED.forEach(([name,color,ms],mi)=>{const mk={id:'mk'+mi,name,color,logo:null};makers.push(mk);
+ ms.forEach(m=>models.push({id:'md-'+mk.id+'-'+m.model,makerId:mk.id,model:m.model,type:m.type,groups:m.groups.map(([gid,gn,its])=>({id:gid,name:gn,items:its.map((t,i)=>({id:gid+'-'+i,name:t[0],unit:t[1],nom:t[2],min:t[3],max:t[4]}))})),docs:m.docs.map(([id,title,pages])=>({id,title,pages}))}))});return{makers,models}}
+const KINDS={full:'Полная разборка',partial:'Частичная разборка',visit:'Выезд к заказчику',arrival:'Прибытие / отправка'};
+const KDESC={full:'Все этапы: фото, отсутствующие компоненты, разборка, замеры',partial:'Инженер выбирает нужные этапы и компоненты для замера',visit:'Работа у заказчика: моточасы, работы, расходники, суточные',arrival:'Фото и дата прибытия в цех; позже — отправка, фото и БУ запчасти'};
+const ST={to:'ТО по чек-листу',verify:'Сверка данных',select:'Состав отчёта',before:'Фото до мойки',after:'Фото после мойки',missing:'Отсутствующие компоненты',disasm:'Разборка и неисправности',meas:'Замеры компонентов',vafter:'Фото общего вида',fluids:'Фильтры и жидкости',inspect:'Внешний осмотр',defects:'Неисправности',works:'Работы и рекомендации',cons:'Расходные материалы',costs:'Время и суточные',arr:'Прибытие',dep:'Отправка',used:'БУ запчасти',finish:'Завершение'};
+const WHERE={appr:'Утверждение',team:'Состав команды',resp:'Ответственный',result:'Итоговый отчёт',adddep:'Дополнение: отправка'};
+const SLOTS={gen:['Спереди','Сзади','Слева','Справа','Сверху'],fluids:['Воздушный фильтр','Топливный фильтр','Масляный фильтр','Гидравлический фильтр','Уровень масла','Уровень ОЖ','Уровень гидравлики']};
+const PHST=['arr','before','after','vafter','fluids','inspect','disasm','defects','dep','used'];
+const UNITS=['л','шт','м','кг','компл.','упак.'];
+const ROLES={admin:'Администратор',chief:'Главный инженер',engineer:'Инженер'};
+
+/* ====== утилиты ====== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
+const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const today=()=>ymd(new Date());
+const fmtD=t=>t?new Date(t).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+const fmtDay=s=>s?s.split('-').reverse().join('.'):'—';
+const num=x=>(x==null||x==='')?NaN:parseFloat(String(x).replace(',','.'));
+const norm=s=>String(s||'').toLowerCase().replace(/[\s\-_.]/g,'');
+const isWE=ds=>{const g=new Date(ds+'T00:00:00').getDay();return g===0||g===6};
+/* Производственный календарь РФ (пятидневка). 2026 — пост. Правительства №1466 от 24.09.2025; 2027 — №1187 от 17.09.2026.
+   off — нерабочие будни (праздники и переносы), work — рабочие субботы/воскресенья, short — сокращённые (предпраздничные) дни */
+const RU_CAL={2026:{off:['01-01','01-02','01-05','01-06','01-07','01-08','01-09','02-23','03-09','05-01','05-11','06-12','11-04','12-31'],work:[],short:['04-30','05-08','06-11','11-03']},
+ 2027:{off:['01-01','01-04','01-05','01-06','01-07','01-08','02-22','02-23','03-08','05-03','05-10','06-14','11-04','11-05','12-31'],work:['02-20'],short:['02-20','04-30','06-11','11-03']}};
+const HOLI={'01-01':'Новый год','01-02':'Новогодние каникулы','01-03':'Новогодние каникулы','01-04':'Новогодние каникулы','01-05':'Новогодние каникулы','01-06':'Новогодние каникулы','01-07':'Рождество','01-08':'Новогодние каникулы','02-23':'День защитника Отечества','03-08':'8 Марта','05-01':'Праздник Весны и Труда','05-09':'День Победы','06-12':'День России','11-04':'День народного единства'};
+function dayInfo(ds){const c=RU_CAL[ds.slice(0,4)],md=ds.slice(5),we=isWE(ds);if(!c)return{off:we,known:false};
+ if(c.work.includes(md))return{off:false,short:c.short.includes(md),workWE:true,known:true};if(c.off.includes(md))return{off:true,hol:HOLI[md]||'перенос выходного',known:true};
+ return{off:we,hol:we&&HOLI[md]?HOLI[md]:null,short:!we&&c.short.includes(md),known:true}}
+const isOff=ds=>dayInfo(ds).off;
+const dayTag=ds=>{const i=dayInfo(ds);return i.hol&&i.off?`<span class="small" style="color:var(--bad)">${esc(i.hol)}</span>`:i.workWE?'<span class="small st-d">рабочая суббота</span>':i.short?'<span class="small st-d">сокращ. (до 16:00)</span>':i.off?'<span class="small" style="color:var(--bad)">выходной</span>':''};
+function dayList(a,b){const o=[],d=new Date(a+'T00:00:00'),e=new Date(b+'T00:00:00');while(d<=e){o.push(ymd(d));d.setDate(d.getDate()+1)}return o}
+const plural=(n,a,b,c)=>{const m=n%10,h=n%100;return m===1&&h!==11?a:(m>=2&&m<=4&&(h<10||h>=20)?b:c)};
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2800)}
+
+/* ====== хранение ====== */
+let S={aggs:[],reports:[],offlineDocs:{},forceOffline:false};
+let V={view:'home'};
+let idb=null,storageOK=true;
+function idbOpen(){return new Promise((res,rej)=>{try{const r=indexedDB.open('tm-proto',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})}
+const idbGet=k=>new Promise((res,rej)=>{if(!idb)return res(null);const q=idb.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)});
+const idbPut=(k,v)=>new Promise((res,rej)=>{if(!idb)return rej(new Error('нет хранилища'));const t=idb.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)});
+const idbDel=k=>{if(idb)idb.transaction('kv','readwrite').objectStore('kv').delete(k)};
+async function load(){try{idb=await idbOpen();const v=await idbGet('state');if(v)S=Object.assign(S,v)}catch(e){storageOK=false}
+ if(!S.cat)S.cat=seedCatalog();
+ if(!S.cat.models.some(m=>m.id==='md-k6d170-2')){let mk=S.cat.makers.find(m=>norm(m.name)==='komatsu');if(!mk){mk={id:'mk'+uid(),name:'Komatsu',color:'#6a1b9a',logo:null};S.cat.makers.push(mk)}const ex=S.cat.models.find(m=>m.makerId===mk.id&&norm(m.model)===norm('6D170-2'));if(ex&&!ex.groups.length){Object.assign(ex,{groups:k6dModel(mk.id).groups,src:k6dModel(mk.id).src})}else if(!ex)S.cat.models.push(k6dModel(mk.id))}
+ {const km=S.cat.models.find(m=>m.id==='md-k6d170-2');if(km)applyK6dExt(km)}
+ if(!S.users)S.users=[{email:'admin@technomining.ru',name:'Администратор',role:'admin',active:true},{email:'engineer@technomining.ru',name:'Иванов И.И.',role:'engineer',active:true}];
+ if(!S.domain)S.domain='technomining.ru';
+ if(!S.regMode)S.regMode='approve';if(S.regDomains===undefined)S.regDomains='';
+ if(!S.proposals)S.proposals=[];
+ if(!S.types)S.types=TYPES.slice();
+ if(!S.ot)S.ot={};
+ if(!S.docNotes)S.docNotes={};
+ ['trash','audit','notif','customers','machines'].forEach(k=>{if(!S[k])S[k]=[]});if(!S.prefs)S.prefs={photoQ:'std',limitMB:2048,big:false};purgeTrash();if(!S.cat.tolists)S.cat.tolists=[];seedTO();
+ if(!S.dist)S.dist=[{customer:'АО «Угольная компания» (демо)',from:'Цех',to:'Разрез «Северный»',km:118},{customer:'ООО «Рудник» (демо)',from:'Цех',to:'Разрез «Северный»',km:105}];
+ if(!S.users.some(u=>u.role==='chief'))S.users.push({email:'chief@technomining.ru',name:'Петров П.П.',role:'chief',active:true});
+ if(!S.aggs.length&&!S._seeded){S.aggs.push({id:uid(),type:'ДВС',maker:'Cummins',model:'QSK19',serial:'37251846',customer:'Демо-заказчик (разрез «Северный»)',created:Date.now(),synced:true})}
+ if(!S._demo&&!S._demoOff){try{seedDemo()}catch(e){console.error('demo',e)}}
+ S._seeded=true;S.aggs.forEach(a=>{if(a.customer){const c=ensureCustomer(a.customer);if(c&&c.name!==a.customer)a.customer=c.name}});S.reports.forEach(migrate);persist()}
+function migrate(r){const d=r.d;if(r.kind==='visit'&&!d.to){d.to={on:false,h:'',items:[],listId:null};if(r.stage>=5)r.stage++}if(d.costs&&d.costs.from===undefined)d.costs.from='Цех';['act','doc'].forEach(k=>{if(!d.ph[k])d.ph[k]=[]});if(r.kind==='visit'&&!d.costs.days&&(d.costs.th||d.costs.tm)){const f=visitDays(r)[0];if(f){dayRec(d.costs,f).travel=hm((parseInt(d.costs.th)||0)*60+(parseInt(d.costs.tm)||0))}}if(d.costs&&d.costs.labor&&!String(d.costs.labor).includes(':')){const v=parseHM(d.costs.labor);d.costs.labor=isNaN(v)?'':hm(v)}['arr','dep','used'].forEach(k=>{if(!d.ph[k])d.ph[k]=[]});if(!d.arr)d.arr={date:today(),dateOk:false};if(!d.dep)d.dep={date:'',dateOk:false};if(!r.team)r.team=[r.author].filter(Boolean);if(!r.resp)r.resp=r.author;if(!r.log)r.log=[];if(!d.cons)d.cons=[];const c=d.costs;if(!c.trips){c.trips=[];c.wkd=[];const ds=(c.days||[]).slice().sort();let st=null,pv=null;ds.forEach(x=>{if(pv&&dayList(pv,x).length===2){pv=x}else{if(st)c.trips.push({from:st,to:pv});st=pv=x}});if(st)c.trips.push({from:st,to:pv});delete c.days}}
+let saveT;function save(){clearTimeout(saveT);saveT=setTimeout(persist,250);renderNet();if(typeof checkLimit==='function'&&S.prefs)checkLimit()}
+function persist(){if(!idb)return;try{idb.transaction('kv','readwrite').objectStore('kv').put(S,'state')}catch(e){console.warn(e)}}
+const online=()=>navigator.onLine&&!S.forceOffline;
+const allDocs=()=>S.cat?S.cat.models.flatMap(m=>m.docs):[];
+const queue=()=>(S.trash||[]).filter(t=>!t.synced).length+S.reports.filter(r=>!r.synced).length+S.aggs.filter(a=>!a.synced).length+allDocs().filter(d=>d.file&&!d.synced).length+Object.values(S.docNotes||{}).reduce((n,x)=>n+x.bm.filter(b=>b.pub&&!b.synced).length+x.cm.filter(c=>c.pub&&!c.synced).length,0);
+function renderNet(){const n=$('#net'),q=queue();if(!S.session){n.textContent='';n.className='';return}if(!online()){n.className='off';n.textContent='Офлайн · '+q}else if(q){n.className='sync';n.textContent='Выгрузка… '+q}else{n.className='on';n.textContent='☁ OK'}n.title=online()?(q?'Идёт выгрузка':'Всё выгружено'):'Нет сети, в очереди: '+q}
+setInterval(()=>{if(!online()||!queue())return;S.reports.forEach(r=>{if(!r.synced){r.synced=true;r.syncedAt=Date.now()}});S.aggs.forEach(a=>a.synced=true);(S.trash||[]).forEach(t=>t.synced=true);allDocs().forEach(d=>{if(d.file&&!d.synced){d.synced=true;d.syncedAt=Date.now()}});Object.values(S.docNotes||{}).forEach(x=>[...x.bm,...x.cm].forEach(n=>{if(n.pub)n.synced=true}));persist();renderNet();if(['agg','result','docs'].includes(V.view))render();if(V.view==='doc')renderSheet()},2500);
+addEventListener('online',renderNet);addEventListener('offline',renderNet);
+
+/* ====== пользователи и права ====== */
+const me=()=>S.session&&S.users.find(u=>u.email===S.session.email&&u.active);
+const isAdmin=()=>me()?.role==='admin';
+const canApprove=()=>{const u=me();return!!u&&(u.role==='admin'||u.role==='chief'||!!u.approve)};
+const pendingProps=()=>S.proposals.filter(p=>p.status==='pending');
+const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+function regDomainOk(e){const l=String(S.regDomains||'').split(/[\s,;]+/).map(x=>x.replace(/^@/,'').toLowerCase()).filter(Boolean);return!l.length||l.some(d=>e.endsWith('@'+d))}
+const pendingUsers=()=>S.users.filter(u=>u.pending);
+const canChief=()=>{const u=me();return!!u&&(u.role==='admin'||u.role==='chief')};
+const needLogo=()=>S.cat.makers.filter(m=>!m.logo&&!m.noLogo);
+const serialKey=x=>String(x||'').toUpperCase().replace(/[^0-9A-ZА-ЯЁ]/g,'');
+const aggKey=a=>norm(a.maker)+'|'+norm(a.model)+'|'+serialKey(a.serial);
+const findAggDup=(o,except)=>serialKey(o.serial)?S.aggs.find(a=>a.id!==except&&aggKey(a)===aggKey(o)):null;
+function mergeAggs(keepId,dropIds){const k=agg(keepId);dropIds.forEach(id=>{const d=agg(id);if(!d||id===keepId)return;S.reports.forEach(r=>{if(r.aggId===id){r.aggId=keepId;r.synced=false}});
+ ['customer','type'].forEach(f=>{if(!k[f]&&d[f])k[f]=d[f]});if(d.customer&&k.customer&&norm(d.customer)!==norm(k.customer))k.custHist=[...new Set([...(k.custHist||[]),d.customer])];S.aggs=S.aggs.filter(a=>a.id!==id)});k.synced=false;save()}
+function dupGroups(){const ex=new Map(),ser=new Map();S.aggs.forEach(a=>{const k=aggKey(a);ex.set(k,[...(ex.get(k)||[]),a]);const sk=serialKey(a.serial);if(sk)ser.set(sk,[...(ser.get(sk)||[]),a])});
+ const exact=[...ex.values()].filter(g=>g.length>1);const sim=[...ser.values()].filter(g=>g.length>1&&new Set(g.map(aggKey)).size>1);return{exact,sim}}
+function dialog(html){closeDlg();const d=document.createElement('div');d.id='dlg';d.innerHTML=`<div class="dlgbox">${html}</div>`;document.body.appendChild(d)}
+function closeDlg(){$('#dlg')?.remove()}
+const aggMini=a=>`<div class="acard" style="--mc:${mcolor(a.maker)};cursor:default">${logo(a.maker)}<div class="i"><b>${esc(a.maker)} ${esc(a.model)}</b><div class="m">SN ${esc(a.serial)} · ${esc(a.customer)}</div><div class="m">Отчётов: ${S.reports.filter(r=>r.aggId===a.id).length} · создана ${fmtD(a.created)}</div></div></div>`;
+function normLogo(f){return new Promise(res=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const W=Math.max(1,Math.min(im.width,1000)),H=Math.max(1,Math.round(im.height*W/im.width));const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');x.drawImage(im,0,0,W,H);
+ let x0=0,y0=0,x1=W-1,y1=H-1;try{const d=x.getImageData(0,0,W,H).data;let a0=W,b0=H,a1=-1,b1=-1;for(let y=0;y<H;y++)for(let xx=0;xx<W;xx++){const k=(y*W+xx)*4;if(d[k+3]>16&&!(d[k]>238&&d[k+1]>238&&d[k+2]>238)){if(xx<a0)a0=xx;if(xx>a1)a1=xx;if(y<b0)b0=y;if(y>b1)b1=y}}if(a1>=0){x0=a0;y0=b0;x1=a1;y1=b1}}catch(e){}
+ const bw=x1-x0+1,bh=y1-y0+1,Z=128,P=10,sc=Math.min((Z-2*P)/bw,(Z-2*P)/bh);const o=document.createElement('canvas');o.width=o.height=Z;const ox=o.getContext('2d');ox.fillStyle='#fff';ox.fillRect(0,0,Z,Z);ox.imageSmoothingQuality='high';ox.drawImage(c,x0,y0,bw,bh,(Z-bw*sc)/2,(Z-bh*sc)/2,bw*sc,bh*sc);res(o.toDataURL('image/png'))};im.onerror=()=>res(null);im.src=fr.result};fr.readAsDataURL(f)})}
+function applyItem(m,gname,src,itemId){if(itemId){for(const g of m.groups){const it=g.items.find(x=>x.id===itemId);if(it){Object.assign(it,{name:src.name,unit:src.unit,nom:src.nom,min:src.min,max:src.max});return g}}}
+ let g=m.groups.find(x=>norm(x.name)===norm(gname));if(!g){g={id:'g'+uid(),name:gname||'Прочее',items:[]};m.groups.push(g)}g.items.push({id:'i'+uid(),name:src.name,unit:src.unit,nom:src.nom,min:src.min,max:src.max});return g}
+function newProposal(m,gname,src,itemId,rid){const p={id:'p'+uid(),modelId:m.id,group:gname,itemId:itemId||null,name:src.name,unit:src.unit,nom:src.nom,min:src.min,max:src.max,by:S.session.email,at:Date.now(),reportId:rid||null,status:'pending'};S.proposals.push(p);notify(usersWhere(u=>u.role==='admin'||u.role==='chief'||u.approve),`Допуск на утверждение: ${src.name} (${makerById(m.makerId).name} ${m.model}) от ${uname(p.by)}`,{view:'appr'});save();return p}
+const uname=e=>{const u=S.users.find(x=>x.email===e);return u?(u.name||u.email):(e||'—')};
+
+/* ====== каталог: производители и модели ====== */
+const makerByName=n=>S.cat.makers.find(m=>norm(m.name)===norm(n));
+const makerById=id=>S.cat.makers.find(m=>m.id===id);
+const modelById=id=>S.cat.models.find(m=>m.id===id);
+function modelOf(o){if(!o)return null;const mk=makerByName(o.maker);return mk?S.cat.models.find(m=>m.makerId===mk.id&&norm(m.model)===norm(o.model)):null}
+function pinnedOwner(o){const m=S.cat.models.find(x=>x.pinned&&norm(x.model)===norm(o.model));return m?makerById(m.makerId):null}
+function dupMakers(o){if(!o||!o.model)return[];const mk=makerByName(o.maker);if(mk&&S.cat.models.some(m=>m.makerId===mk.id&&m.pinned&&norm(m.model)===norm(o.model)))return[];return[...new Set(S.cat.models.filter(m=>norm(m.model)===norm(o.model)&&(!mk||m.makerId!==mk.id)).map(m=>makerById(m.makerId)?.name))]}
+function ensureModel(o){if(!o.maker||!o.model)return;let mk=makerByName(o.maker);if(!mk){mk={id:'mk'+uid(),name:o.maker.trim(),color:PALETTE[S.cat.makers.length%PALETTE.length],logo:null};S.cat.makers.push(mk);toast('Новый производитель «'+mk.name+'» добавлен в справочник')}
+ if(!S.cat.models.some(m=>m.makerId===mk.id&&norm(m.model)===norm(o.model))){S.cat.models.push({id:'md'+uid(),makerId:mk.id,model:o.model.trim(),type:o.type,groups:[],docs:[],auto:true,by:me()?.email,at:Date.now()});toast('Модель «'+o.model+'» привязана к производителю '+mk.name)}}
+function autoMaker(o){if(o.maker||!o.model)return;const c=[...new Set(S.cat.models.filter(m=>norm(m.model)===norm(o.model)).map(m=>m.makerId))];if(c.length===1)o.maker=makerById(c[0]).name}
+const typeOpts=cur=>{const l=S.types.includes(cur)||!cur?S.types:[cur,...S.types];return l.map(t=>`<option ${cur===t?'selected':''}>${esc(t)}</option>`).join('')+'<option value="__new">＋ Новый тип…</option>'};
+const visTypes=()=>{const u=me();return u&&u.types&&u.types.length?u.types:null};
+const mono=n=>{const w=String(n||'?').trim().split(/\s+/);return(w.length>1?w[0][0]+w[1][0]:w[0].slice(0,2)).toUpperCase()};
+function logo(name,sm){const mk=makerByName(name);const c=mk?.color||'#8a8f98';return`<span class="logo ${sm?'sm':''}" style="--mc:${c}">${mk?.logo?`<img src="${mk.logo}" alt="">`:esc(mono(name))}</span>`}
+const mcolor=name=>makerByName(name)?.color||'#8a8f98';
+
+/* ====== отчёты ====== */
+const agg=id=>S.aggs.find(a=>a.id===id);
+const curRep=()=>S.reports.find(r=>r.id===V.rid);
+const curAgg=()=>agg(V.aid);
+/* ====== заказчики и машины ====== */
+const custKey=n=>String(n||'').toLowerCase().replace(/[«»"'„“”()]/g,' ').replace(/(^|\s)(ооо|оао|зао|пао|ао|ип|ltd|llc)(?=\s|$)/g,' ').replace(/[^a-zа-яё0-9]/g,'');
+function findCustomer(n){const k=custKey(n);if(!k)return null;return S.customers.find(c=>custKey(c.name)===k||(c.aliases||[]).some(a=>custKey(a)===k))}
+function ensureCustomer(n){if(!n||!String(n).trim())return null;let c=findCustomer(n);if(!c){c={id:'c'+uid(),name:String(n).trim(),aliases:[],email:'',phone:'',at:Date.now()};S.customers.push(c)}return c}
+function custDupGroups(){const m=new Map();S.customers.forEach(c=>{const k=custKey(c.name).slice(0,8);if(!k)return;m.set(k,[...(m.get(k)||[]),c])});return[...m.values()].filter(g=>g.length>1)}
+function renameCustomer(oldN,newN){if(!oldN||oldN===newN)return;S.aggs.forEach(a=>{if(a.customer===oldN){a.customer=newN;a.synced=false}});S.dist.forEach(d=>{if(d.customer===oldN)d.customer=newN});S.machines.forEach(m=>{if(m.customer===oldN)m.customer=newN})}
+const machineById=id=>S.machines.find(m=>m.id===id);
+const machName=m=>m?`${m.model}${m.num?' № '+m.num:''}`:'';
+function curInst(a){return(a.inst||[]).find(i=>!i.to)}
+/* ====== журнал, уведомления, корзина ====== */
+const DAY=864e5;
+function audit(action,details,target){S.audit.push({id:uid(),at:Date.now(),by:S.session?.email||'—',action,details:details||'',target:target||null});if(S.audit.length>3000)S.audit.splice(0,S.audit.length-3000)}
+function notify(to,text,link){const self=S.session?.email;[...new Set([].concat(to||[]))].filter(e=>e&&e!==self).forEach(e=>S.notif.push({id:uid(),to:e,text,link:link||null,at:Date.now(),read:false}));if(S.notif.length>2000)S.notif.splice(0,S.notif.length-2000)}
+const usersWhere=f=>S.users.filter(u=>u.active&&f(u)).map(u=>u.email);
+const myNotif=()=>S.notif.filter(n=>n.to===S.session?.email);
+function trashPut(type,data,title){S.trash.push({id:uid(),type,data,title,by:S.session.email,at:Date.now(),exp:Date.now()+30*DAY,synced:false})}
+function dropVideos(o){try{JSON.stringify(o,(k,v)=>{if(v&&v.vid&&v.id){idbDel('vid:'+v.id);idbDel('srvvid:'+v.id)}return v})}catch(e){}}
+function purgeTrash(){const now=Date.now(),old=S.trash.length;S.trash.filter(t=>t.exp<=now).forEach(t=>dropVideos(t.data));S.trash=S.trash.filter(t=>t.exp>now);if(S.trash.length<old)audit('Корзина: автоочистка',`удалено навсегда: ${old-S.trash.length} (старше 30 дней)`)}
+function logEdit(r,where){const u=S.session.email,now=Date.now();r.log=r.log||[];const l=r.log[r.log.length-1];if(l&&l.by===u&&l.where===where&&now-l.at<15*60000)l.at=now;else{r.log.push({by:u,at:now,where});const a=agg(r.aggId);if(where!=='other'&&a)notify([r.resp,...(r.team||[])],`${uname(u)} изменил(а) отчёт «${KINDS[r.kind]}» (${a.maker} ${a.model}, SN ${a.serial}) — ${whereName(where)}`,{view:'result',rid:r.id})}if(r.log.length>300)r.log.splice(0,r.log.length-300)}
+function touch(){const r=curRep();if(r){r.updated=Date.now();r.synced=false;logEdit(r,V.view==='rep'?stages(r)[r.stage]:V.view==='result'?'result':'other');syncVisitOT(r)}save()}
+const whereName=w=>ST[w]||WHERE[w]||'Отчёт';
+const othersEdits=(r,where)=>{const m=new Map();(r.log||[]).filter(l=>l.by!==r.author&&(!where||l.where===where)).forEach(l=>{const k=l.by+'|'+l.where;m.set(k,l)});return[...m.values()]};
+function setPath(p,v){const parts=p.split('.');const R={r:curRep(),a:curAgg(),f:V.form,S};let o=R[parts[0]];for(let i=1;i<parts.length-1;i++)o=o[parts[i]];o[parts[parts.length-1]]=v;if(parts[0]==='a')curAgg().synced=false}
+function newReport(kind,aggId){return{id:uid(),aggId,kind,author:S.session.email,team:[S.session.email],resp:S.session.email,log:[],created:Date.now(),updated:Date.now(),status:'draft',stage:0,synced:false,d:{verified:false,ph:{before:[],after:[],vafter:[],fluids:[],inspect:[],disasm:[],defects:[],arr:[],dep:[],used:[],act:[],doc:[]},arr:{date:today(),dateOk:false},dep:{date:'',dateOk:false},depOn:false,missing:[],noMissing:false,en:{before:true,after:true,missing:false,disasm:true,meas:true},measSel:null,mv:{},mskip:{},custom:[],st:{},visit:{hours:'',date:today(),dateOk:false},to:{on:false,h:'',items:[],listId:null},inspectNote:'',works:[''],recs:'',cons:[{name:'',qty:'',unit:'л'}],costs:{labor:'',th:'',tm:'',km:'',from:'Цех',place:'',trips:[],wkd:[]}}}}
+function stages(r){if(r.kind==='arrival')return['verify','arr',...(r.d.depOn?['dep']:[]),'finish'];if(r.kind==='full')return['verify','before','after','missing','disasm','meas','finish'];
+ if(r.kind==='partial'){const e=r.d.en;return['verify','select',...['before','after','missing','disasm','meas'].filter(k=>e[k]),'finish']}
+ return['verify','vafter','fluids','inspect','defects','to','works','cons','costs','finish']}
+function groupsFor(r){const m=modelOf(agg(r.aggId));let gs=(m?m.groups:[]).filter(g=>g.items.length);
+ if(r.kind==='partial'&&r.d.measSel)gs=gs.filter(g=>r.d.measSel.includes(g.id));
+ if(r.d.custom.length)gs=gs.concat([{id:'custom',name:'Дополнительные замеры (вне техданных модели)',items:r.d.custom}]);return gs}
+const hasNorm=it=>it.min!=null&&it.max!=null&&!isNaN(it.min)&&!isNaN(it.max);
+const mStatus=(it,v)=>isNaN(v)?'none':!hasNorm(it)?'free':(v>=it.min-1e-9&&v<=it.max+1e-9?'ok':'bad');
+function badge(it,v,sk){if(sk)return['b-skip','пропущен'];const s=mStatus(it,v);if(s==='none')return['b-none','—'];if(s==='free')return['b-free','без норматива'];if(s==='ok')return['b-ok','✓ в допуске'];const dev=v<it.min?'−'+(+(it.min-v).toFixed(3)):'+'+(+(v-it.max).toFixed(3));return['b-bad','✗ '+dev+' '+it.unit]}
+function propStatus(it){if(!it.prop)return'';const p=S.proposals.find(x=>x.id===it.prop);if(!p)return'';return p.status==='pending'?' · <span class="st-d">⏳ допуск на подтверждении</span>':p.status==='approved'?' · <span class="st-ok">✓ утверждён как стандарт</span>':` · <span style="color:var(--bad)">✗ допуск отклонён${p.reason?': '+esc(p.reason):''}</span>`}
+const normTxt=it=>(hasNorm(it)?`Допуск: ${it.min} … ${it.max} ${esc(it.unit)}${it.nom!=null&&!isNaN(it.nom)?' · номинал '+it.nom:''}`:'Норматив не задан')+(it.ref?` · <span title="Shop Manual, стр. ${esc(it.ref)}">📖 стр. ${esc(it.ref)}</span>`:'')+propStatus(it);
+/* ====== сетки замеров и ремонтные размеры ====== */
+function effIt(it,o){if(!it.sizes||!it.sizes.length)return it;const sz=it.sizes.find(s=>s.n===(o&&o.size))||it.sizes[0];return{...it,nom:sz.nom,min:sz.min,max:sz.max,szName:sz.n}}
+function gridEval(it,o){const e=effIt(it,o),g=it.grid,vals=(o&&o.g)||{};const cells={},ov={},tp={};let bad=0,filled=0;const total=g.rows*g.pos.length*g.dirs.length;
+ for(let r=1;r<=g.rows;r++){g.pos.forEach((p,pi)=>{const row=[];g.dirs.forEach((d,di)=>{const k=r+'|'+pi+'|'+di,v=num(vals[k]);let st='none';if(!isNaN(v)){filled++;st=mStatus(e,v);if(st==='bad')bad++}cells[k]={v,st};row.push(v)});
+   if(g.dirs.length>1&&row.every(x=>!isNaN(x))){const x=+(Math.max(...row)-Math.min(...row)).toFixed(4);const b=g.ov!=null&&x>g.ov+1e-9;if(b)bad++;ov[r+'|'+pi]={v:x,bad:b}}});
+  if(g.pos.length>1)g.dirs.forEach((d,di)=>{const col=g.pos.map((p,pi)=>num(vals[r+'|'+pi+'|'+di]));if(col.every(x=>!isNaN(x))){const x=+(Math.max(...col)-Math.min(...col)).toFixed(4);const b=g.tp!=null&&x>g.tp+1e-9;if(b)bad++;tp[r+'|'+di]={v:x,bad:b}}})}
+ return{e,cells,ov,tp,bad,filled,total,st:!filled?'none':bad?'bad':'ok'}}
+const colLbl=(p,d)=>[p,d].filter(Boolean).join(' ')||'Значение';
+function gridTable(it,o,edit){const g=it.grid,ev=gridEval(it,o),hasOv=g.dirs.length>1,hasTp=g.pos.length>1;
+ let h=`<div class="gwrap"><table class="gtbl"><tr><th>${esc(g.rowName)}</th>${g.pos.map(p=>g.dirs.map(d=>`<th>${esc(colLbl(p,d))}</th>`).join('')).join('')}${hasOv?g.pos.map(p=>`<th class="gd">Овальн.${p?' '+esc(p):''}</th>`).join(''):''}${hasTp?g.dirs.map(d=>`<th class="gd">Конусн.${d?' '+esc(d):''}</th>`).join(''):''}</tr>`;
+ for(let r=1;r<=g.rows;r++){h+=`<tr><th>${r}</th>`;g.pos.forEach((p,pi)=>g.dirs.forEach((d,di)=>{const k=r+'|'+pi+'|'+di,c=ev.cells[k];h+=edit?`<td><input inputmode="decimal" class="g-${c.st}" data-mg="${it.id}|${k}" value="${esc((o&&o.g&&o.g[k])??'')}"></td>`:`<td class="g-${c.st}">${isNaN(c.v)?'—':c.v}</td>`}));
+  if(hasOv)g.pos.forEach((p,pi)=>{const x=ev.ov[r+'|'+pi];h+=`<td class="gd ${x?(x.bad?'g-bad':'g-ok'):''}" id="gd-${it.id}-o-${r}-${pi}">${x?x.v:'—'}</td>`});
+  if(hasTp)g.dirs.forEach((d,di)=>{const x=ev.tp[r+'|'+di];h+=`<td class="gd ${x?(x.bad?'g-bad':'g-ok'):''}" id="gd-${it.id}-t-${r}-${di}">${x?x.v:'—'}</td>`});h+='</tr>'}
+ return h+`</table></div><div class="small muted">Допуск: ${ev.e.min} … ${ev.e.max} ${esc(it.unit)}${ev.e.szName?' ('+esc(ev.e.szName)+')':''}${hasOv&&g.ov!=null?` · овальность ≤ ${g.ov}`:''}${hasTp&&g.tp!=null?` · конусность ≤ ${g.tp}`:''} · заполнено ${ev.filled}/${ev.total}</div>`}
+function gridBadge(it,o,sk){if(sk)return['b-skip','пропущен'];const ev=gridEval(it,o);if(ev.st==='none')return['b-none','—'];return ev.st==='bad'?['b-bad',`✗ ${ev.bad} вне допуска`]:['b-ok',`✓ ${ev.filled}/${ev.total}`]}
+function updateGrid(id){const r=curRep(),it=groupsFor(r).flatMap(g=>g.items).find(x=>x.id===id);if(!it)return;const o=mvObj(id),ev=gridEval(it,o);
+ document.querySelectorAll(`[data-mg^="${id}|"]`).forEach(inp=>{const k=inp.dataset.mg.slice(id.length+1);inp.className='g-'+ev.cells[k].st});
+ const g=it.grid;for(let rr=1;rr<=g.rows;rr++){g.pos.forEach((p,pi)=>{const el=$(`#gd-${id}-o-${rr}-${pi}`);if(el){const x=ev.ov[rr+'|'+pi];el.textContent=x?x.v:'—';el.className='gd '+(x?(x.bad?'g-bad':'g-ok'):'')}});g.dirs.forEach((d,di)=>{const el=$(`#gd-${id}-t-${rr}-${di}`);if(el){const x=ev.tp[rr+'|'+di];el.textContent=x?x.v:'—';el.className='gd '+(x?(x.bad?'g-bad':'g-ok'):'')}})}
+ const[bc,bt]=gridBadge(it,o,false);const bd=$('#mb-'+id);if(bd){bd.className='badge '+bc;bd.textContent=bt}const mr=$('#mr-'+id);if(mr)mr.className='mrow s-'+ev.st}
+function measStats(r){let c={ok:0,bad:0,skip:0,none:0,free:0},rows=[];const off=r.d.st.meas==='skipped'||(r.kind==='partial'&&!r.d.en.meas)||r.kind==='visit'||r.kind==='arrival';if(off)return{...c,rows,off:true};
+ for(const g of groupsFor(r)){const gs=r.d.mskip['g:'+g.id];for(const it0 of g.items){const o=r.d.mv[it0.id];const it=effIt(it0,o);const sk=gs||r.d.mskip[it0.id];const v=num(o?.v);const st=sk?'skip':it0.grid?gridEval(it0,o).st:mStatus(it,v);c[st]++;rows.push({g,it,o,v,st,sk})}}return{...c,rows}}
+const mvObj=id=>{const r=curRep();return r.d.mv[id]||(r.d.mv[id]={v:'',photos:[],c:''})};
+function perDiem(c){return c.trips.reduce((s,t)=>s+dayList(t.from,t.to).length-1,0)}
+const tripOf=(c,ds)=>c.trips.find(t=>ds>=t.from&&ds<=t.to);
+
+/* ====== фото ====== */
+let TGT={},PH={},PENDING=null;
+const PQ={high:{max:2400,q:.85,n:'Высокое (2400 px)'},std:{max:1600,q:.8,n:'Стандартное (1600 px)'},eco:{max:1024,q:.7,n:'Экономное (1024 px)'}};
+function compress(f,max,type='image/jpeg'){const pq=PQ[S.prefs?.photoQ]||PQ.std;max=max||pq.max;return new Promise(res=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const sc=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL(type,type==='image/jpeg'?pq.q:.8))};im.onerror=()=>res(fr.result);im.src=fr.result};fr.readAsDataURL(f)})}
+async function onFiles(e){const t=PENDING,fs=[...e.target.files];e.target.value='';if(!t||!fs.length)return;
+ if(t.logo){const l=await normLogo(fs[0]);if(!l)return toast('Не удалось прочитать картинку');t.logo.logo=l;t.logo.noLogo=false;save();if($('#lgrows')&&needLogo().length){$('#lgrows').innerHTML=needLogo().map(logoRow).join('');return toast('Логотип приведён к 128×128')}closeDlg();render();return toast('Логотип приведён к 128×128')}
+ if(t.plate){const img=await compress(fs[0],2000);return ocrPlate(t.plate,img)}
+ let nv=0,np=0;for(const f of fs){if(/^video\//.test(f.type)||/\.(mp4|mov|3gp|webm|m4v)$/i.test(f.name)){const v=await addVideo(f,t);if(v)nv++}else{t.arr.push({id:uid(),img:await compress(f),label:t.label||'',comment:'',defect:!!t.defect,ts:Date.now(),by:S.session.email});np++}}
+ if(!nv&&!np)return;touch();render();toast(nv&&np?'Фото и видео сохранены в памяти устройства':nv?'Видео сохранено в памяти устройства':'Фото сохранено в памяти устройства')}
+/* ====== Видео ====== */
+const VQ={30:'до 30 секунд',60:'до 1 минуты',120:'до 2 минут',300:'до 5 минут'};const VID_MAXMB=300;
+const fmtDur=s=>{s=Math.round(s||0);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+function videoMeta(f){return new Promise(res=>{const url=URL.createObjectURL(f),v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='auto';let done=false;const fin=(poster,dur,w,h)=>{if(done)return;done=true;URL.revokeObjectURL(url);res({poster,dur,w,h})};
+ const grab=()=>{try{const sc=Math.min(1,960/Math.max(v.videoWidth,v.videoHeight)),c=document.createElement('canvas');c.width=Math.round(v.videoWidth*sc)||640;c.height=Math.round(v.videoHeight*sc)||360;c.getContext('2d').drawImage(v,0,0,c.width,c.height);fin(c.toDataURL('image/jpeg',.75),v.duration,v.videoWidth,v.videoHeight)}catch(e){fin(null,v.duration)}};
+ v.onloadedmetadata=()=>{const d=isFinite(v.duration)?v.duration:0;v.currentTime=Math.min(1,d/3||0)};v.onseeked=grab;v.onerror=()=>fin(null,0);setTimeout(()=>{if(!done)v.readyState>=2?grab():fin(null,isFinite(v.duration)?v.duration:0)},6000);v.src=url})}
+function posterStub(dur){const c=document.createElement('canvas');c.width=640;c.height=360;const x=c.getContext('2d');x.fillStyle='#2b323c';x.fillRect(0,0,640,360);x.fillStyle='#fff';x.font='bold 40px sans-serif';x.textAlign='center';x.fillText('Видео '+fmtDur(dur),320,195);return c.toDataURL('image/jpeg',.7)}
+async function addVideo(f,t){const mx=+(S.prefs.vidMax||120);if(f.size>VID_MAXMB*1048576){toast(`Видео больше ${VID_MAXMB} МБ — снимите короче`);return null}
+ const m=await videoMeta(f);if(m.dur&&m.dur>mx+1){if(!await confirmAsk(`Видео длиннее ${VQ[mx]||mx+' с'} (${fmtDur(m.dur)}, ${MB(f.size)}). Сохранить всё равно?`))return null}
+ const id=uid();try{await idbPut('vid:'+id,f)}catch(e){toast('Не хватает памяти для видео');return null}
+ const p={id,vid:true,img:m.poster||posterStub(m.dur),dur:m.dur||0,size:f.size,mime:f.type||'video/mp4',label:t.label||'',comment:'',defect:!!t.defect,ts:Date.now(),by:S.session.email};t.arr.push(p);return p}
+function confirmAsk(msg){return new Promise(res=>{dialog(`<h2>Длинное видео</h2><p>${esc(msg)}</p><p class="hint">Длинные видео занимают много места на телефоне и долго выгружаются по мобильному интернету. Лимит длительности — в «Настройки и память».</p><div class="row"><button class="btn pri" id="ca-y">Сохранить</button><button class="btn ghost" id="ca-n">Отмена</button></div>`);$('#ca-y').onclick=()=>{closeDlg();res(true)};$('#ca-n').onclick=()=>{closeDlg();res(false)}})}
+async function playVideo(p){let blob=await idbGet('vid:'+p.id);if(!blob&&p.vremote){if(!online())return toast('Видео выгружено на сервер — нужен интернет, чтобы посмотреть');blob=await idbGet('srvvid:'+p.id)}
+ if(!blob)return toast('Файл видео не найден на этом устройстве');const url=URL.createObjectURL(blob);const z=document.createElement('div');z.id='zoom';
+ z.innerHTML=`<video src="${url}" controls autoplay playsinline style="max-width:100%;max-height:72vh;background:#000;border-radius:8px"></video><div class="cap"><b style="color:${p.defect?'#ff8a80':'#fff'}">${p.defect?'⚠ Неисправность · ':''}🎥 ${esc(p.label)} · ${fmtDur(p.dur)} · ${MB(p.size||blob.size)}</b><br>${esc(p.comment)}</div><div class="row" style="justify-content:center;margin:10px 0 0">${mediaBtns(p.id)}${p.vremote?`<button class="btn sm" data-vkeep="${p.id}">📥 Хранить в приложении</button>`:''}</div><button class="btn ghost" data-vclose style="margin-top:12px">Закрыть</button>`;
+ z.onclick=async e=>{if(e.target.closest('video')||e.target.closest('[data-act]'))return;const k=e.target.closest('[data-vkeep]');if(k){await idbPut('vid:'+p.id,blob);delete p.vremote;save();toast('Видео снова хранится на телефоне');k.remove();return}URL.revokeObjectURL(url);z.remove();render()};document.body.appendChild(z)}
+$('#fCam').onchange=onFiles;$('#fGal').onchange=onFiles;$('#fVid').onchange=onFiles;
+function phCard(p,arr){PH[p.id]={p,arr};return`<div class="ph ${p.defect?'def':''}"><div style="position:relative"><img src="${p.img}" data-act="zoom" data-id="${p.id}" alt="">${p.vid?`<span class="vplay" data-act="zoom" data-id="${p.id}">▶</span><span class="vdur">🎥 ${fmtDur(p.dur)}</span>${p.vremote?'<span class="remtag">☁ на сервере</span>':''}`:`${p.remote?'<span class="remtag">☁ миниатюра</span>':''}<button class="annbtn" data-act="annot" data-id="${p.id}" title="Разметить: стрелки, круги">✏️</button>`}</div><div class="phb"><div class="phl">${p.defect?'⚠ ':''}${p.vid?'Видео · ':''}${esc(p.label)}</div><textarea data-pc="${p.id}" placeholder="Комментарий к ${p.vid?'видео':'фото'}">${esc(p.comment)}</textarea><div class="row"><label class="chk"><input type="checkbox" data-pd="${p.id}" ${p.defect?'checked':''}>Неисправность</label><button class="btn sm ghost" data-act="delph" data-id="${p.id}">Удалить</button></div></div></div>`}
+function addBtns(arr,label,defect){const k=uid();TGT[k]={arr,label,defect};return`<div class="addrow"><button class="btn ${defect?'red':''}" data-act="cam" data-t="${k}">📷 Камера</button><button class="btn ${defect?'red':''}" data-act="vidcam" data-t="${k}">🎥 Видео</button><button class="btn ghost" data-act="gal" data-t="${k}">🖼 Галерея</button></div>`}
+function slotsBlock(arr,slots){let h='<div class="slots">';for(const s of slots){const p=arr.find(x=>x.label===s);if(p)h+=phCard(p,arr);else{const k=uid();TGT[k]={arr,label:s};h+=`<div class="slot"><div class="slt">${esc(s)}</div><button class="btn" data-act="cam" data-t="${k}">📷 Снять</button><button class="btn ghost sm" data-act="gal" data-t="${k}">из галереи</button></div>`}}
+ arr.filter(x=>!slots.includes(x.label)).forEach(p=>h+=phCard(p,arr));return h+`</div><h4>Дополнительные фото</h4>`+addBtns(arr,'Доп.')}
+function defectArea(arr){const dm=!!V.defMode,f=V.phf||'all',nd=arr.filter(p=>p.defect).length;const list=arr.filter(p=>f==='all'||(f==='def'?p.defect:!p.defect));
+ return`<div class="mode"><button class="seg ${!dm?'on':''}" data-act="mode" data-v="0">📷 Ознакомительное</button><button class="seg red ${dm?'on':''}" data-act="mode" data-v="1">⚠ Неисправность</button></div>
+ <p class="hint">${dm?'Режим «Неисправность»: новые фото сразу помечаются красным и попадают в раздел неисправностей отчёта.':'Фото этапов для ознакомления. Пометку «Неисправность» можно поставить на любое фото позже.'}</p>${addBtns(arr,dm?'Неисправность':'Этап работ',dm)}
+ <div class="segs"><button class="seg ${f==='all'?'on':''}" data-act="phf" data-v="all">Все (${arr.length})</button><button class="seg red ${f==='def'?'on':''}" data-act="phf" data-v="def">Неисправности (${nd})</button><button class="seg ${f==='info'?'on':''}" data-act="phf" data-v="info">Ознакомительные (${arr.length-nd})</button></div>
+ <div class="grid">${list.map(p=>phCard(p,arr)).join('')||'<p class="muted">Фото пока нет</p>'}</div>`}
+
+/* ====== экраны ====== */
+function applyPrefs(){document.body.classList.toggle('big',!!S.prefs?.big)}
+let MICFOR=null;
+document.addEventListener('focusin',e=>{const t=e.target;if(!(t.tagName==='TEXTAREA'||(t.tagName==='INPUT'&&(!t.type||t.type==='text'||t.type==='search')&&!t.inputMode))||S.prefs?.mic===false||!S.session){$('#micb')?.remove();return}MICFOR=t;if(!$('#micb')){const b=document.createElement('button');b.id='micb';b.type='button';b.textContent='🎤';b.title='Голосовой ввод';b.addEventListener('mousedown',ev=>ev.preventDefault());b.addEventListener('click',startMic);document.body.appendChild(b)}});
+document.addEventListener('focusout',e=>{setTimeout(()=>{if(!document.activeElement||!['TEXTAREA','INPUT'].includes(document.activeElement.tagName))$('#micb')?.remove()},200)});
+function startMic(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition,t=MICFOR;if(!t)return;
+ if(window.TMNative){window.tmSpeechResult=txt=>{$('#micb')?.classList.remove('rec');if(!txt)return;t.value=(t.value?t.value.replace(/\s*$/,' '):'')+txt;t.dispatchEvent(new Event('input',{bubbles:true}));t.dispatchEvent(new Event('change',{bubbles:true}))};$('#micb')?.classList.add('rec');TMNative.speech(t.placeholder||'Говорите…');return}if(!SR)return toast('Голосовой ввод недоступен в этом браузере. На телефоне нажмите 🎤 на клавиатуре — диктовка работает и без интернета.');
+ try{const r=new SR();r.lang='ru-RU';r.interimResults=false;r.onresult=ev=>{const txt=ev.results[0][0].transcript;t.value=(t.value?t.value.replace(/\s*$/,' '):'')+txt;t.dispatchEvent(new Event('input',{bubbles:true}));t.dispatchEvent(new Event('change',{bubbles:true}))};r.onerror=ev=>toast('Голосовой ввод: '+(ev.error==='not-allowed'?'нет доступа к микрофону. Используйте 🎤 на клавиатуре телефона.':ev.error));r.onstart=()=>{$('#micb')?.classList.add('rec')};r.onend=()=>{$('#micb')?.classList.remove('rec')};r.start()}catch(e){toast('Голосовой ввод недоступен: используйте 🎤 на клавиатуре телефона')}}
+function render(){applyPrefs();TGT={};PH={};$('#umenu')?.remove();
+ if(S.session&&!me()){S.session=null;persist();toast('Доступ отозван администратором')}
+ if(!S.session){$('#bell').hidden=true;$('#app').innerHTML=vLogin();$('#navslot').innerHTML='';$('#ttl').innerHTML='ТехноМайнинг<small>Сервисный инженер</small>';$('#back').hidden=true;$('#ubtn').hidden=true;renderNet();return}
+ if(V.view!=='doc'){$('#sheet')?.remove();V.sheet=null}closeDlg();if(V.view!=='doc'&&PDFDOC){try{PDFDOC.destroy()}catch(e){}PDFDOC=null;SEARCH_TOKEN++;if(PDFOBS){PDFOBS.disconnect();PDFOBS=null}}const v=V.view;let h='',ttl='ТехноМайнинг',sub='Сервисный инженер',nav='';const a=curAgg();
+ if((v==='admin'&&!isAdmin())||((v==='makers'||v==='stats')&&!canChief())){V.view='home';return render()}
+ if(v==='home')h=vHome();
+ else if(v==='aggform'){h=vAggForm();ttl=V.form.id?'Изменение агрегата':'Новый агрегат'}
+ else if(v==='agg'){h=vAgg();ttl=a.maker+' '+a.model;sub='SN '+a.serial}
+ else if(v==='rep'){const r=curRep();[h,nav]=vRep(r);ttl=KINDS[r.kind];sub=a.maker+' '+a.model+' · SN '+a.serial}
+ else if(v==='result'){h=vRes();ttl='Отчёт: '+KINDS[curRep().kind];sub=a.maker+' '+a.model}
+ else if(v==='docs'){h=vDocs();ttl='Инструкции'}
+ else if(v==='doc'){h=vDoc();ttl='Инструкция'}
+ else if(v==='admin'){h=vAdmin();ttl='Администрирование'}
+ else if(v==='makers'){h=vMakersBody();ttl='Производители'}
+ else if(v==='ot'){h=vOT();ttl='График переработок';sub=uname(canChief()&&V.otUser?V.otUser:S.session.email)}
+ else if(v==='machine'){h=vMachine();ttl='Машина'}
+ else if(v==='customers'){h=vCustomers();ttl='Заказчики'}
+ else if(v==='search'){h=vSearch();ttl='Поиск по отчётам'}
+ else if(v==='stats'){h=vStats();ttl='Аналитика'}
+ else if(v==='settings'){h=vSettings();ttl='Настройки'}
+ else if(v==='tolists'){h=vToLists();ttl='Чек-листы ТО'}
+ else if(v==='tolist'){h=vToList();ttl='Чек-лист ТО'}
+ else if(v==='appr'){h=vAppr();ttl='Допуски';sub=canApprove()?'Подтверждение предложений':'Мои предложения'}
+ else if(v==='amodel'){const m=modelById(V.mid);h=vAModel(m);ttl='Техданные модели';sub=makerById(m.makerId).name+' '+m.model}
+ $('#app').innerHTML=h;$('#navslot').innerHTML=nav;$('#ttl').innerHTML=esc(ttl)+'<small>'+esc(sub)+'</small>';$('#back').hidden=v==='home';
+ const u=me();{const nn=myNotif().filter(n=>!n.read).length;const bl=$('#bell');bl.hidden=false;bl.innerHTML='🔔'+(nn?`<span class="cnt">${nn}</span>`:'')}$('#ubtn').hidden=false;$('#ubtn').textContent='👤 '+(u.name||u.email);
+ $('#banner').innerHTML=storageOK?'':'<div class="banner">Память браузера недоступна в этом окне — данные не сохранятся после закрытия.</div>';renderNet();
+ if(v==='doc')afterDoc();if(v==='ot')otPreview();autoLogoPrompt()}
+function logoRow(mk){const k=uid();TGT[k]={logo:mk};const i=S.cat.makers.indexOf(mk);const q=encodeURIComponent(mk.name+(mk.site?' '+mk.site:'')+' logo png');
+ return`<div class="mkrow">${logo(mk.name)}<div><b>${esc(mk.name)}</b><input data-b="S.cat.makers.${i}.site" value="${esc(mk.site||'')}" placeholder="сайт, напр. ${esc(norm(mk.name))}.com" class="small"></div><span></span>
+ <div class="row"><a class="btn sm pri" href="https://www.google.com/search?tbm=isch&q=${q}" target="_blank" rel="noopener">🔎 Найти</a><button class="btn sm ghost" data-act="gal" data-t="${k}">⬆ Загрузить</button><button class="btn sm ghost" data-act="nologo" data-i="${i}">Без логотипа</button></div></div>`}
+function autoLogoPrompt(){if(!canChief()||$('#dlg')||V.view==='makers')return;V.lp=V.lp||{};const nl=needLogo();if(!nl.some(m=>!V.lp[m.id]))return;nl.forEach(m=>V.lp[m.id]=1);
+ dialog(`<h2>Подобрать логотипы?</h2><p class="hint">Для этих производителей ещё нет логотипа. Загруженный файл автоматически обрезается и приводится к 128×128. Логотип необязателен.</p><div id="lgrows">${nl.map(logoRow).join('')}</div>
+ <div class="row"><button class="btn ghost" data-act="dlgclose">Позже</button></div><p class="hint">В рабочей версии сервер сам скачивает варианты по сайту производителя — останется выбрать один.</p>`)}
+function go(view,p){V=Object.assign({},V,{view},p||{});render();scrollTo(0,0)}
+
+function vLogin(){const reg=V.lgMode==='reg',code=V.lgStep==='code';
+ return`<div class="card login"><div class="lmark">ТМ</div><div class="mode" style="margin-bottom:12px"><button class="seg ${!reg?'on':''}" data-act="lgmode" data-v="in">Вход</button><button class="seg ${reg?'on':''}" data-act="lgmode" data-v="reg">Регистрация</button></div>
+ ${V.lgDone?`<h2>Заявка отправлена</h2><p>Учётная запись <b>${esc(V.lgEmail)}</b> создана и ожидает подтверждения администратором. После подтверждения войдите со своей почтой.</p><button class="btn ghost" data-act="lgmode" data-v="in">Ко входу</button>`:`
+ <h2>${reg?'Регистрация':'Вход в приложение'}</h2><p class="hint">${reg?`Укажите любую рабочую почту — на неё придёт код подтверждения.${S.regMode==='approve'?' После регистрации доступ откроет администратор.':''}${S.regDomains?' Разрешённые домены: '+esc(S.regDomains)+'.':''}`:'Войдите по почте, указанной при регистрации или добавленной администратором.'}</p>
+ <label>Электронная почта<input id="lg-e" type="email" autocomplete="email" value="${esc(V.lgEmail||'')}" ${code?'disabled':''} placeholder="name@example.ru"></label>
+ ${reg&&!code?`<label>ФИО<input id="lg-n" autocomplete="name" value="${esc(V.lgName||'')}" placeholder="Иванов Иван Иванович"></label>`:''}
+ ${code?`<label>Код из письма<input id="lg-c" inputmode="numeric" autocomplete="one-time-code" placeholder="4 цифры"></label><p class="hint">Демо: код <b>1234</b>. В приложении код приходит на указанную почту.</p>`:''}
+ <div class="row"><button class="btn pri big" data-act="login">${code?(reg?'Подтвердить и зарегистрироваться':'Войти'):'Получить код'}</button>${code?'<button class="btn ghost" data-act="lgback">Другая почта</button>':''}</div>
+ ${reg?'':`<div class="hint" style="margin-top:14px">Демо-учётки:<br>admin@${esc(S.domain)} — администратор<br>chief@${esc(S.domain)} — главный инженер<br>engineer@${esc(S.domain)} — инженер</div>`}`}</div>`}
+function inShop(a){return S.reports.some(r=>r.aggId===a.id&&r.kind==='arrival'&&r.status!=='draft'&&!r.d.depOn)||S.reports.some(r=>r.aggId===a.id&&r.kind==='arrival'&&r.d.depOn&&r.status==='draft')}
+function aggList(){const q=(V.q||'').toLowerCase().trim(),vt=visTypes(),f=V.hf||{},me_=S.session.email;
+ const l=S.aggs.filter(a=>{if(vt&&!vt.includes(a.type))return false;if(f.type&&a.type!==f.type)return false;if(f.maker&&norm(a.maker)!==norm(f.maker))return false;const rs=S.reports.filter(r=>r.aggId===a.id);
+  if(f.st==='draft'&&!rs.some(r=>r.status==='draft'))return false;if(f.st==='review'&&!rs.some(r=>r.status==='done'))return false;if(f.st==='none'&&rs.length)return false;if(f.st==='mine'&&!rs.some(r=>(r.team||[]).includes(me_)))return false;if(f.st==='resp'&&!rs.some(r=>r.resp===me_))return false;if(f.st==='shop'&&!inShop(a))return false;
+  return!q||q.split(/\s+/).every(w=>[a.type,a.maker,a.model,a.serial,a.customer,machName(machineById(curInst(a)?.machineId))].join(' ').toLowerCase().includes(w)||serialKey(a.serial).includes(serialKey(w))&&serialKey(w))}).sort((x,y)=>y.created-x.created);
+ const fm=f.mach||'';const l2=fm?l.filter(a=>{const mid=curInst(a)?.machineId||'';return fm==='__none'?!mid:mid===fm}):l;
+ if(!l2.length)return'<p class="muted">Ничего не найдено</p>';
+ if(S.prefs.groupMach===false)return l2.map(aggCard).join('');
+ const groups=new Map(),free=[];l2.forEach(a=>{const mid=curInst(a)?.machineId;const m=mid&&machineById(mid);if(m){if(!groups.has(m.id))groups.set(m.id,{m,list:[]});groups.get(m.id).list.push(a)}else free.push(a)});
+ if(!groups.size)return free.map(aggCard).join('');
+ const gs=[...groups.values()].sort((x,y)=>(x.m.customer||'').localeCompare(y.m.customer||'')||machName(x.m).localeCompare(machName(y.m),'ru',{numeric:true}));V.mcol=V.mcol||{};
+ return gs.map(({m,list})=>{const all=S.aggs.filter(a=>curInst(a)?.machineId===m.id).length,shop=list.filter(inShop).length,hrs=list.map(a=>hoursHist(a)[0]).filter(Boolean).sort((x,y)=>x.date<y.date?1:-1)[0];
+  return`<details class="mgroup" data-mg2="${m.id}" ${V.mcol[m.id]?'':'open'}><summary><span class="mgi">🚜</span><span class="mgt"><b>${esc(machName(m))}</b>${m.customer?` <span class="small muted">· ${esc(m.customer)}</span>`:''}<div class="small muted">агрегатов: ${list.length}${list.length<all?' из '+all:''}${shop?` · <b style="color:var(--info)">в цехе: ${shop}</b>`:''}${hrs?` · ${esc(hrs.hours)} м/ч`:''}</div></span><a href="#" class="btn sm ghost" data-act="machine" data-id="${m.id}" data-from="home">Машина ›</a></summary><div class="mgl">${list.map(aggCard).join('')}</div></details>`}).join('')
+  +(free.length?`<h4 class="mgfree">Без машины (склад, ремонт, не указана) — ${free.length}</h4>${free.map(aggCard).join('')}`:'')}
+function aggCard(a){{const rs=S.reports.filter(r=>r.aggId===a.id),dr=rs.filter(r=>r.status==='draft').length;const dup=dupMakers(a);const c=mcolor(a.maker);
+  return`<button class="acard" style="--mc:${c};background:linear-gradient(90deg,${c}22,var(--card) 45%)" data-act="openagg" data-id="${a.id}">${logo(a.maker)}<div class="i"><span class="tag">${esc(a.type)}</span><br><b style="color:${c}">${esc(a.maker)}</b> <b class="${dup.length?'dupm':''}" title="${dup.length?'Такая модель есть также у: '+esc(dup.join(', ')):''}">${esc(a.model)}</b>${dup.length?' <span class="small">⚠</span>':''}<div class="m">SN ${esc(a.serial)} · ${esc(a.customer)}</div><div class="m">Отчётов: ${rs.length}${dr?` · <span class="st-d">черновиков: ${dr}</span>`:''}${inShop(a)?' · <b style="color:var(--info)">в цехе</b>':''}</div></div></button>`}}
+function vHome(){return`<div class="row" style="margin-top:0"><button class="btn pri big" data-act="newagg">+ Новый агрегат</button><button class="btn ghost big" data-act="docs">📘 Инструкции</button><button class="btn ghost big" data-act="search">🔎 Поиск в отчётах</button><button class="btn ghost big" data-act="ot">⏱ Переработки</button>${canChief()?'<button class="btn ghost big" data-act="stats">📊 Аналитика</button>':''}<button class="btn ghost big" data-act="appr">📐 Допуски${canApprove()&&pendingProps().length?`<span class="cnt">${pendingProps().length}</span>`:''}</button>${isAdmin()?'<button class="btn ghost big" data-act="admin">⚙ Админ</button>':''}</div>
+${canChief()&&needLogo().length?`<div class="warn" style="margin-top:12px">Новые производители без логотипа: <b>${esc(needLogo().map(m=>m.name).join(', '))}</b>. <button class="btn sm" data-act="makers">Подобрать логотипы</button></div>`:''}${isAdmin()&&pendingUsers().length?`<div class="warn" style="margin-top:12px">Новые заявки на регистрацию: <b>${pendingUsers().length}</b>. <button class="btn sm" data-act="admin" data-tab="users">Рассмотреть</button></div>`:''}${isAdmin()&&(()=>{const g=dupGroups();return g.exact.length+g.sim.length})()?`<div class="warn" style="margin-top:12px">Найдены возможные дубли вкладок агрегатов. <button class="btn sm" data-act="admin" data-tab="dups">Проверить</button></div>`:''}
+ <input class="search" type="search" placeholder="Поиск: производитель, модель, серийный №, заказчик" data-q value="${esc(V.q||'')}">
+ <div class="filters"><select data-hf="type"><option value="">Все типы</option>${(visTypes()||S.types).map(t=>`<option ${V.hf?.type===t?'selected':''}>${esc(t)}</option>`).join('')}</select>
+ <select data-hf="maker"><option value="">Все производители</option>${S.cat.makers.map(m=>`<option ${V.hf?.maker===m.name?'selected':''}>${esc(m.name)}</option>`).join('')}</select>
+ <select data-hf="st"><option value="">Все агрегаты</option>${[['draft','Есть черновики'],['review','Есть отчёты на проверке'],['none','Без отчётов'],['shop','Сейчас в цехе'],['mine','Мои отчёты'],['resp','Я ответственный']].map(([k,n])=>`<option value="${k}" ${V.hf?.st===k?'selected':''}>${n}</option>`).join('')}</select>
+ ${S.machines.length?`<select data-hf="mach"><option value="">Все машины</option>${S.machines.slice().sort((x,y)=>machName(x).localeCompare(machName(y),'ru',{numeric:true})).map(m=>`<option value="${m.id}" ${V.hf?.mach===m.id?'selected':''}>${esc(machName(m))}${m.customer?' · '+esc(m.customer):''}</option>`).join('')}<option value="__none" ${V.hf?.mach==='__none'?'selected':''}>— без машины —</option></select>`:''}</div>
+ ${S.machines.length?`<label class="chk small" style="margin:-4px 0 8px"><input type="checkbox" data-pref="groupMach" ${S.prefs.groupMach!==false?'checked':''}>Группировать агрегаты по машинам</label>`:''}
+ ${visTypes()?`<p class="hint" style="margin-top:-6px">Показаны только мои типы: ${esc(visTypes().join(', '))}. <a href="#" data-act="mytypes">Изменить</a></p>`:''}
+ <div id="agglist">${aggList()}</div>
+ <div class="card small"><b>Прототип для проверки сценариев.</b> Данные хранятся только в этом браузере, синхронизация имитируется, технические данные демонстрационные. Модель, подсвеченная жёлтым, есть у нескольких производителей.
+ <label class="chk" style="margin-top:10px"><input type="checkbox" data-off ${S.forceOffline?'checked':''}>Имитировать отсутствие интернета</label></div>`}
+function dl(o){const mk=makerByName(o?.maker);const md=[...new Set(S.cat.models.filter(m=>!mk||m.makerId===mk.id).map(m=>m.model))];const cu=S.customers.map(c=>c.name);
+ return`<datalist id="dl-mk">${S.cat.makers.map(x=>`<option value="${esc(x.name)}">`).join('')}</datalist><datalist id="dl-md">${md.map(x=>`<option value="${esc(x)}">`).join('')}</datalist><datalist id="dl-cu">${cu.map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`}
+function aggExtras(root){const o=root==='f'?V.form:curAgg();const m=modelOf(o),dup=dupMakers(o);const mk=makerByName(o.maker);const isNew=o.maker&&o.model&&!m;
+ const nItems=m?m.groups.reduce((s,g)=>s+g.items.length,0):0;
+ return`${dup.length?`<div class="warn">⚠ Модель «${esc(o.model)}» есть также у производителя: <b>${esc(dup.join(', '))}</b>.${(()=>{const po=pinnedOwner(o);return po&&norm(po.name)!==norm(o.maker)?` Модель закреплена за <b>${esc(po.name)}</b>.`:''})()} Проверьте производителя по шильдику. Создание отчёта не ограничено.${canChief()&&m?`<div class="row"><button class="btn sm" data-act="pinmodel" data-id="${m.id}">📌 Закрепить «${esc(m.model)}» за ${esc(mk.name)}</button></div>`:''}</div>`:(m?.pinned?`<div class="hint"><span class="pin">📌 закреплена за ${esc(mk.name)}</span></div>`:'')}
+ <div class="hint">${m?(nItems?`✓ Модель в каталоге ${esc(mk.name)}: техданные для замеров — ${nItems} параметров.`:`Модель в каталоге ${esc(mk.name)}, но техданные для замеров не заданы (их вносит администратор).`):(isNew?`Новая модель — при сохранении будет автоматически привязана к производителю ${esc(o.maker)}.`:'')}</div>`}
+function aggFields(root){const o=root==='f'?V.form:curAgg();const dup=dupMakers(o);
+ return`<div id="aggdl">${dl(o)}</div><div class="two"><label>Тип агрегата<select data-b="${root}.type">${typeOpts(o.type)}</select></label>
+ <label>Производитель<div class="row" style="margin:0;flex-wrap:nowrap"><span id="agglogo">${o.maker?logo(o.maker,1):''}</span><input list="dl-mk" data-b="${root}.maker" value="${esc(o.maker)}"></div></label>
+ <label>Модель<input list="dl-md" class="${dup.length?'dup':''}" data-b="${root}.model" value="${esc(o.model)}"></label>
+ <label>Серийный номер<div class="row" style="margin:0;flex-wrap:nowrap"><input data-b="${root}.serial" value="${esc(o.serial)}" style="margin:0"><button class="btn sm ghost" data-act="plate" data-root="${root}" title="Распознать номер с фото шильдика">📷 Шильдик</button></div></label></div>
+ <div id="aggx">${aggExtras(root)}</div>
+ <label>Заказчик<input list="dl-cu" data-b="${root}.customer" value="${esc(o.customer)}"></label><div class="hint" id="custhint">${custHint(o.customer)}</div>
+ ${root==='f'&&!o.id?`<label>Машина, на которой стоит агрегат (необязательно)<select data-b="f.machineId"><option value="">— не указана —</option>${S.machines.filter(m=>!o.customer||!m.customer||custKey(m.customer)===custKey(o.customer)).map(m=>`<option value="${m.id}" ${o.machineId===m.id?'selected':''}>${esc(machName(m))}${m.customer?' · '+esc(m.customer):''}</option>`).join('')}<option value="__newm">＋ Новая машина…</option></select></label>`:''}`}
+function custHint(n){if(!n)return'';const c=findCustomer(n);return c?(c.name!==String(n).trim()?`Будет записан как «${esc(c.name)}» (справочник заказчиков)`:'✓ Заказчик из справочника'):'Новый заказчик — будет добавлен в справочник'}
+function refreshAgg(root){const o=root==='f'?V.form:curAgg();const mi=document.querySelector(`[data-b="${root}.maker"]`),mo=document.querySelector(`[data-b="${root}.model"]`);
+ if(mi&&mi.value!==o.maker)mi.value=o.maker;if(mo)mo.classList.toggle('dup',dupMakers(o).length>0);$('#aggx').innerHTML=aggExtras(root);$('#aggdl').innerHTML=dl(o);$('#agglogo').innerHTML=o.maker?logo(o.maker,1):''}
+function vAggForm(){return`<div class="card">${aggFields('f')}<div class="row"><button class="btn pri big" data-act="saveagg">Сохранить</button></div></div>`}
+function canDelRep(r){if(canChief())return true;const u=S.session.email;return r.status==='draft'&&(r.author===u||(r.team||[]).includes(u))}
+function repSummary(r){const a=agg(r.aggId)||{},ph=allPhotos(r).length,ot=Object.values(S.ot).reduce((n,l)=>n+l.filter(e=>e.reportId===r.id).length,0);return{a,ph,ot}}
+function askDelRep(id){const r=S.reports.find(x=>x.id===id);if(!r)return;if(!canDelRep(r))return toast(r.status==='draft'?'Удалить можно только свой черновик':'Сформированный отчёт может удалить только администратор или главный инженер');const{a,ph,ot}=repSummary(r);
+ dialog(`<h2 style="color:var(--bad)">Удалить отчёт?</h2><div class="kv"><span>Отчёт</span><b>${KINDS[r.kind]}</b><span>Агрегат</span><b>${esc(a.maker||'')} ${esc(a.model||'')}, SN ${esc(a.serial||'')}</b><span>Статус</span><b>${stLabel(r)}</b><span>Автор</span><b>${esc(uname(r.author))}</b><span>Создан</span><b>${fmtD(r.created)}</b></div>
+ <div class="warn">Отчёт будет перемещён в корзину на сервере на 30 дней — восстановить его может администратор. Вместе с ним: ${ph} фото${r.kind==='visit'?', автоматические записи переработок участников':''}${ot?` (записей в графиках: ${ot})`:''}. После 30 дней отчёт удаляется безвозвратно.</div>
+ <label>Для подтверждения введите слово <b>УДАЛИТЬ</b><input id="del-c" autocomplete="off"></label>
+ <div class="row"><button class="btn red" data-act="delrep2" data-id="${r.id}">Удалить отчёт</button><button class="btn ghost" data-act="dlgclose">Отмена</button></div>`);setTimeout(()=>$('#del-c')?.focus(),50)}
+const stLabel=r=>r.status==='approved'?'<span class="st-ok">✅ Утверждён</span>':r.status==='done'?'<span style="color:var(--info)">🕓 На проверке</span>':'<span class="st-d">Черновик</span>';
+function canEditRep(r){return r.status!=='approved'}
+function repRow(r){const sts=stages(r);const done=r.status!=='draft';const ar=r.kind==='arrival';return`<div class="rrow"><div class="i"><b>${KINDS[r.kind]}</b><div class="m">Отв.: ${esc(uname(r.resp))}${(r.team||[]).length>1?' · команда: '+r.team.length:''} · создан ${fmtD(r.created)}</div><div class="m">${done?(ar?(r.d.depOn?`<span class="st-ok">✓ Отправлен ${fmtDay(r.d.dep.date)}</span>`:`<span class="st-ok">✓ Прибыл ${fmtDay(r.d.arr.date)}</span> · <b style="color:var(--info)">в цехе</b>`)+(r.d.ph.doc?.length?' · 📎 документ':''):stLabel(r)+(r.kind==='visit'?(r.d.ph.act?.length?' · 📎 акт':' · <span class="st-d">нет акта</span>'):'')):`<span class="st-d">Черновик · этап ${r.stage+1}/${sts.length}: ${ST[sts[r.stage]]||''}</span>`} · ${r.synced?'☁ выгружен':'⏳ ждёт сети'}</div></div>
+ ${done?`<button class="btn sm pri" data-act="result" data-id="${r.id}">Открыть</button>`:''}${canEditRep(r)?`<button class="btn sm ${done?'ghost':'pri'}" data-act="openrep" data-id="${r.id}">${done?'Изменить':'Продолжить'}</button>`:''}${canDelRep(r)?`<button class="btn sm ghost" data-act="delrep" data-id="${r.id}" title="Удалить отчёт">🗑</button>`:''}</div>`}
+/* ====== Чек-листы ТО ====== */
+const TOACT={check:'Проверка',replace:'Замена',adjust:'Регулировка',clean:'Очистка',lube:'Смазка',drain:'Слив',tighten:'Подтяжка'};
+const TOEVERY=[10,50,100,250,500,1000,2000,3000,4000,6000,8000];
+function seedTO(){const m=modelById('md-k6d170-2');if(!m||S.cat.tolists.some(l=>l.modelId===m.id)||S._toSeed)return;S._toSeed=true;
+ const it=(t,act,every)=>({id:uid(),t,act,every});
+ S.cat.tolists.push({id:'tl'+uid(),modelId:m.id,approved:false,src:'ШАБЛОН для проверки: типовой перечень работ ТО дизеля. Интервалы и операции сверить с руководством по эксплуатации Komatsu и утвердить.',by:'system',at:Date.now(),items:[
+  it('Уровень моторного масла','check',10),it('Уровень охлаждающей жидкости','check',10),it('Отсутствие подтёканий масла, топлива, ОЖ','check',10),it('Индикатор засорённости воздушного фильтра','check',10),
+  it('Отстой из топливного бака и водоотделителя','drain',250),it('Натяжение и состояние приводных ремней','check',250),it('Крепление и состояние шлангов и хомутов','check',250),
+  it('Моторное масло','replace',500),it('Масляные фильтры (полнопоточный и байпасный)','replace',500),it('Топливный фильтр','replace',500),it('Сапун картера','clean',500),
+  it('Элемент антикоррозионного фильтра ОЖ','replace',1000),it('Затяжка креплений турбокомпрессора и выпускного коллектора','tighten',1000),
+  it('Зазоры клапанов','adjust',2000),it('Люфт ротора турбокомпрессора','check',2000),it('Демпфер коленчатого вала','check',2000),
+  it('Охлаждающая жидкость (с промывкой системы)','replace',4000),it('Водяной насос: течь, люфт подшипника','check',4000),it('Форсунки: давление впрыска и распыл','check',4000)]})}
+const toListFor=modelId=>S.cat.tolists.find(l=>l.modelId===modelId);
+const toListOf=a=>{const m=modelOf(a);return m?toListFor(m.id):null};
+const toBase=l=>{const e=l.items.map(i=>+i.every).filter(x=>x>0),big=e.filter(x=>x>=100);return Math.min(...(big.length?big:e),Infinity)};/* операции чаще 100 м/ч — ежесменные, входят в каждое ТО */
+const toItemsAt=(l,H)=>l.items.filter(i=>+i.every>0&&H%(+i.every)===0);
+function toSuggest(l,hours){const b=toBase(l);if(!isFinite(b))return 0;const h=num(hours);return isNaN(h)||h<b?b:Math.max(b,Math.round(h/b)*b)}
+const toName=H=>'ТО-'+H;
+function toApply(r,l,H){const t=r.d.to;t.mem=t.mem||{};(t.items||[]).forEach(x=>{t.mem[x.id]={st:x.st,c:x.c}});const old=new Map(Object.entries(t.mem));r.d.to.h=H;r.d.to.listId=l.id;r.d.to.items=toItemsAt(l,H).map(i=>({id:i.id,t:i.t,act:i.act,every:i.every,st:old.get(i.id)?.st||'',c:old.get(i.id)?.c||''}))}
+function toStats(r){const it=r.d.to?.items||[];return{n:it.length,ok:it.filter(x=>x.st==='ok').length,no:it.filter(x=>x.st==='no').length,na:it.filter(x=>x.st==='na').length,none:it.filter(x=>!x.st).length}}
+function lastTO(a){return S.reports.filter(r=>r.aggId===a.id&&r.kind==='visit'&&r.d.to?.on&&r.d.to.h&&r.status!=='draft').sort((x,y)=>x.d.visit.date<y.d.visit.date?1:-1)[0]}
+function nextTO(a){const l=toListOf(a);if(!l||!l.items.length)return null;const b=toBase(l),cur=hoursHist(a)[0],last=lastTO(a);const curH=cur?num(cur.hours):NaN;
+ let nextH,dueAt;if(last){nextH=last.d.to.h+b;dueAt=num(last.d.visit.hours)+b}else{nextH=isNaN(curH)?b:toSuggest(l,curH+b/2);dueAt=NaN}
+ if(last&&!isNaN(dueAt)){while(!isNaN(curH)&&curH>dueAt+b){nextH+=b;dueAt+=b}}
+ return{l,b,last,curH,nextH,dueAt,left:isNaN(dueAt)||isNaN(curH)?null:Math.round(dueAt-curH)}}
+function toAggLine(a){const n=nextTO(a);if(!n)return'<span class="muted">чек-листа нет</span>';const l=n.last;
+ return`${l?`последнее ${toName(l.d.to.h)} при ${esc(l.d.visit.hours)} м/ч (${fmtDay(l.d.visit.date)})<br>`:'проведённых ТО по чек-листу нет<br>'}следующее <b>${toName(n.nextH)}</b>${!isNaN(n.dueAt)?` при ≈${n.dueAt} м/ч`:''}${n.left!=null?(n.left<0?` <span class="badge b-bad">просрочено на ${-n.left} м/ч</span>`:n.left<=n.b*0.1?` <span class="badge warnb">осталось ${n.left} м/ч</span>`:` <span class="small muted">осталось ${n.left} м/ч</span>`):''}`}
+function toStage(r){const a=agg(r.aggId),m=modelOf(a),l=m&&toListFor(m.id),t=r.d.to;
+ if(!l||!l.items.length)return`<p class="hint">Для модели ${esc(a.maker)} ${esc(a.model)} чек-лист ТО ещё не создан.${canChief()&&m?'':' Его создаёт главный инженер или администратор.'}</p>${canChief()&&m?`<div class="row"><button class="btn" data-act="tonew" data-m="${m.id}">＋ Создать чек-лист для модели</button></div>`:''}<p class="muted small">Если ТО не проводилось — просто нажмите «Далее».</p>`;
+ const b=toBase(l),hrs=num(r.d.visit.hours);
+ let h=`${l.approved?'':`<div class="warn">Чек-лист не утверждён: ${esc(l.src||'')}</div>`}<label class="chk"><input type="checkbox" data-act="toon" ${t.on?'checked':''}>Проводилось техническое обслуживание по чек-листу</label>`;
+ if(!t.on)return h+`<p class="hint">Моточасы по отчёту: ${isNaN(hrs)?'не указаны (этап «Сверка данных»)':hrs+' ч'}. По ним будет предложен вид ТО (кратно ${b} м/ч).</p>`;
+ const sug=toSuggest(l,hrs),opts=[...new Set([sug-b,sug,sug+b,t.h].filter(x=>x>=b))].sort((x,y)=>x-y),st=toStats(r);
+ h+=`<div class="two"><label>Вид ТO<select data-act2="toh">${opts.map(o=>`<option value="${o}" ${+t.h===o?'selected':''}>${toName(o)}${o===sug?' — по моточасам':''}</option>`).join('')}</select></label><label>Другое (м/ч, кратно ${b})<input inputmode="numeric" data-toh placeholder="например 6000"></label></div>
+ <p class="hint">Моточасы: ${isNaN(hrs)?'не указаны':hrs+' ч'} · ${toName(t.h)} включает операции с периодичностью ${[...new Set(t.items.map(x=>x.every))].sort((x,y)=>x-y).join(', ')} м/ч · пунктов: ${st.n}</p>
+ <div class="row"><button class="btn sm" data-act="toall">✓ Отметить все невыбранные как выполненные</button><span class="small muted" id="tocnt">${toCnt(r)}</span></div>`;
+ let lastE=null;t.items.forEach((x,i)=>{if(x.every!==lastE){h+=`<h4>${x.every<100?'Ежесменно (каждые '+x.every+' м/ч)':'Каждые '+x.every+' м/ч'}</h4>`;lastE=x.every}
+  h+=`<div class="toi ${x.st}" id="toi${i}"><div class="tot"><span class="tag">${esc(TOACT[x.act]||'')}</span> ${esc(x.t)}</div><div class="mode tobtn"><button class="seg ${x.st==='ok'?'on':''}" data-act="tost" data-i="${i}" data-v="ok">✓ Выполнено</button><button class="seg red ${x.st==='no'?'on':''}" data-act="tost" data-i="${i}" data-v="no">✗ Не выполнено</button><button class="seg ${x.st==='na'?'on':''}" data-act="tost" data-i="${i}" data-v="na">— Не требуется</button></div><input data-b="r.d.to.items.${i}.c" value="${esc(x.c)}" placeholder="${x.st==='no'?'Причина / что обнаружено':'Комментарий, результат проверки'}"></div>`});
+ return h}
+const toCnt=r=>{const s=toStats(r);return`выполнено ${s.ok}, не выполнено ${s.no}, не требуется ${s.na}${s.none?`, <b>не отмечено ${s.none}</b>`:''}`};
+function vToLists(){const ms=S.cat.models.filter(m=>m.model);const rows=ms.map(m=>{const l=toListFor(m.id),mk=makerById(m.makerId);return{m,l,mk}}).sort((x,y)=>(!!y.l-!!x.l)||(x.mk?.name+x.m.model).localeCompare(y.mk?.name+y.m.model));
+ return`<div class="card"><h2>Чек-листы ТО</h2><p class="hint">Чек-лист задаётся для модели агрегата: операция, вид работ и периодичность в моточасах. ТО-N включает все операции, у которых N кратно периодичности (например, ТО-1000 = операции 250 + 500 + 1000). Операции с периодичностью меньше 100 м/ч считаются ежесменными и входят в каждое ТО. ${canChief()?'Создаёт и утверждает главный инженер или администратор.':'Изменять чек-листы может главный инженер или администратор.'}</p>
+ ${rows.map(({m,l,mk})=>`<div class="nrow"><div class="i"><b>${esc(mk?.name||'')} ${esc(m.model)}</b> <span class="small muted">${esc(m.type||'')}</span><div class="small">${l?`${l.items.length} операций · интервалы ${[...new Set(l.items.map(x=>+x.every))].sort((a,b)=>a-b).join(', ')} м/ч · ${l.approved?'<span class="badge b-ok">утверждён</span>':'<span class="badge warnb">не утверждён</span>'}`:'<span class="muted">нет чек-листа</span>'}</div></div>${l?`<button class="btn sm" data-act="tolist" data-id="${l.id}">Открыть</button>`:canChief()?`<button class="btn sm ghost" data-act="tonew" data-m="${m.id}">＋ Создать</button>`:''}</div>`).join('')}</div>`}
+function vToList(){const li=S.cat.tolists.findIndex(x=>x.id===V.tlid),l=S.cat.tolists[li];if(!l)return'<p>Не найден</p>';const m=modelById(l.modelId),mk=makerById(m.makerId),ed=canChief();
+ const ev=[...new Set([...TOEVERY,...l.items.map(x=>+x.every)])].sort((a,b)=>a-b);const order=l.items.map((x,i)=>({x,i})).sort((a,b)=>a.x.every-b.x.every||a.i-b.i);
+ return`<div class="card"><h2>${esc(mk.name)} ${esc(m.model)} — чек-лист ТО</h2><div class="row" style="margin:0">${l.approved?'<span class="badge b-ok">утверждён</span>':'<span class="badge warnb">не утверждён — инженеры видят предупреждение</span>'}${l.appr?`<span class="small muted">${esc(uname(l.appr.by))}, ${fmtD(l.appr.at)}</span>`:''}</div>
+ <label>Источник / примечание<input ${ed?'':'disabled'} data-b="S.cat.tolists.${li}.src" value="${esc(l.src||'')}" placeholder="например: OMM Komatsu HD785-7, раздел «Обслуживание»"></label>
+ ${ed?`<div class="row">${l.approved?`<button class="btn ghost sm" data-act="tounappr" data-id="${l.id}">Снять утверждение</button>`:`<button class="btn pri sm" data-act="toappr" data-id="${l.id}">✓ Утвердить чек-лист</button>`}<button class="btn ghost sm" data-act="tocopy" data-id="${l.id}">⧉ Скопировать для другой модели</button><button class="btn ghost sm" data-act="todel" data-id="${l.id}">Удалить</button></div>`:''}
+ <h3>Операции (${l.items.length})</h3>${order.map(({x,i})=>ed?`<div class="tored"><select data-b="S.cat.tolists.${li}.items.${i}.act">${Object.entries(TOACT).map(([k,n])=>`<option value="${k}" ${x.act===k?'selected':''}>${n}</option>`).join('')}</select><input data-b="S.cat.tolists.${li}.items.${i}.t" value="${esc(x.t)}" placeholder="Операция"><select data-toev="${li}|${i}">${ev.map(e=>`<option value="${e}" ${+x.every===e?'selected':''}>каждые ${e} м/ч</option>`).join('')}</select><button class="btn sm ghost" data-act="toidel" data-li="${li}" data-i="${i}">✕</button></div>`:`<div class="nrow"><div class="i">${esc(TOACT[x.act]||'')}: ${esc(x.t)}</div><span class="small muted">каждые ${x.every} м/ч</span></div>`).join('')}
+ ${ed?`<div class="row"><button class="btn" data-act="toiadd" data-li="${li}">＋ Операция</button></div>`:''}
+ <h3>Состав ТО</h3><div class="sumlist">${(()=>{const b=toBase(l),mx=Math.max(...l.items.map(x=>+x.every));const out=[];for(let H=b;H<=mx&&out.length<16;H+=b)out.push(`<div><span>${toName(H)}</span><b>${toItemsAt(l,H).length} операций</b></div>`);return out.join('')})()}</div></div>`}
+/* ====== Тестовые (демонстрационные) данные ====== */
+function demoPhoto(label,opt={}){const c=document.createElement('canvas');c.width=800;c.height=600;const x=c.getContext('2d');let seed=0;for(const ch of label)seed=(seed*31+ch.charCodeAt(0))>>>0;const rnd=()=>((seed=(seed*1103515245+12345)>>>0)/4294967296);
+ const hue=opt.hue??(200+rnd()*40),g=x.createLinearGradient(0,0,800,600);g.addColorStop(0,`hsl(${hue},8%,${opt.dark?22:58}%)`);g.addColorStop(1,`hsl(${hue},10%,${opt.dark?12:34}%)`);x.fillStyle=g;x.fillRect(0,0,800,600);
+ for(let i=0;i<14;i++){x.fillStyle=`hsla(${hue},6%,${30+rnd()*40}%,.55)`;const w=80+rnd()*260,h=40+rnd()*200;x.beginPath();x.roundRect?x.roundRect(rnd()*700,rnd()*520,w,h,18):x.rect(rnd()*700,rnd()*520,w,h);x.fill()}
+ for(let i=0;i<6;i++){x.strokeStyle=`hsla(${hue},5%,${70+rnd()*20}%,.5)`;x.lineWidth=6+rnd()*10;x.beginPath();x.arc(rnd()*800,rnd()*600,30+rnd()*90,0,7);x.stroke()}
+ if(opt.defect){x.strokeStyle='#e53935';x.lineWidth=7;x.beginPath();x.ellipse(420,300,120,80,0.3,0,7);x.stroke();x.strokeStyle='#3a1a0a';x.lineWidth=3;for(let i=0;i<5;i++){x.beginPath();x.moveTo(360+i*20,270);x.lineTo(380+i*24,330);x.stroke()}}
+ x.fillStyle='rgba(0,0,0,.55)';x.fillRect(0,540,800,60);x.fillStyle='#fff';x.font='bold 26px sans-serif';x.fillText('ДЕМО · '+label,20,580);return c.toDataURL('image/jpeg',.72)}
+const dAdd=(n)=>{const d=new Date();d.setDate(d.getDate()+n);return ymd(d)};const tAt=(n,h=10)=>{const d=new Date();d.setDate(d.getDate()+n);d.setHours(h,15,0,0);return d.getTime()};
+function seedDemo(){if(S._demo)return false;const prev=S.session;S.session=S.session||{email:'admin@technomining.ru'};
+ const U=[['smirnov@technomining.ru','Смирнов Д.О.','engineer'],['sidorov@technomining.ru','Сидоров С.С.','engineer'],['kuznetsov@technomining.ru','Кузнецов А.В.','engineer',true]];
+ U.forEach(([email,name,role,ap])=>{if(!S.users.some(u=>u.email===email))S.users.push({email,name,role,active:true,approve:!!ap,demo:true})});
+ if(!S.users.some(u=>u.email==='novikov.m@example.ru'))S.users.push({email:'novikov.m@example.ru',name:'Новиков М.А.',role:'engineer',active:false,pending:true,registered:tAt(-1,18),selfReg:true,demo:true});
+ const C=[['АО «Угольная компания «Северная» (демо)','mech@severnaya.example.ru'],['ООО «Рудник Восточный» (демо)','service@vostok.example.ru'],['АО «Карьер Уральский» (демо)','glavmeh@karier.example.ru']];
+ C.forEach(([n,e])=>{const c=ensureCustomer(n);c.email=c.email||e;c.demo=true});const [c1,c2,c3]=C.map(x=>x[0]);
+ [[c1,'Цех','Разрез «Северный»',118],[c2,'Цех','Рудник «Восточный», карьер №2',64],[c3,'Цех','Карьер «Уральский»',212]].forEach(([customer,from,to,km])=>{if(!S.dist.some(d=>d.customer===customer&&d.to===to))S.dist.push({customer,from,to,km,demo:true})});
+ const M={};[['m1','Komatsu HD785-7','12',c1],['m2','Komatsu HD785-7','15',c1],['m3','БелАЗ 75131','7',c2],['m4','Komatsu WA600-6','3',c3]].forEach(([k,model,num,customer])=>{const m={id:'dm'+uid(),model,num,customer,by:'admin@technomining.ru',at:tAt(-200),demo:true};S.machines.push(m);M[k]=m});
+ const A={};const mkA=(k,type,maker,model,serial,customer,mk,hFrom,from,hours)=>{const a={id:'da'+uid(),type,maker,model,serial,customer,created:tAt(-120+Object.keys(A).length),synced:true,by:'smirnov@technomining.ru',inst:mk?[{machineId:M[mk].id,from:from||dAdd(-400),to:null,hoursFrom:hFrom??null,note:''}]:[],hours:hours||[],demo:true};S.aggs.push(a);A[k]=a;return a};
+ mkA('e1','ДВС','Komatsu','6D170-2','26512345',c1,null,null);
+ mkA('e2','ДВС','Komatsu','6D170-2','26514410',c3,null,null);
+ mkA('e3','ДВС','Komatsu','6D170-2','26518877',c3,'m4',8200,dAdd(-520),[{date:dAdd(-60),hours:11640,src:'со слов механика'}]);
+ mkA('e4','ДВС','Cummins','QSK19','37260021',c2,'m3',3150,dAdd(-300));
+ mkA('t1','АКПП','Allison','4500','6610234567',c2,'m3',3150,dAdd(-300));
+ mkA('g1','КПП','ZF','6WG260','1120345',c3,'m4',8200,dAdd(-520));
+ mkA('b1','Мост','Komatsu','HD785 задний мост','A10123',c1,'m2',21500,dAdd(-700));
+ mkA('b2','Мост','Komatsu','HD785 задний мост','A10388',c1,'m1',18020,dAdd(-650));
+ mkA('y1','ДВС','ЯМЗ','ЯМЗ-238','0823456',c2,null,null);
+ const ENG=['smirnov@technomining.ru','sidorov@technomining.ru','kuznetsov@technomining.ru'];
+ const P=(label,o={})=>({id:uid(),img:demoPhoto(label,o),label,comment:o.c||'',defect:!!o.defect,ts:o.ts||Date.now(),by:o.by||ENG[0]});
+ function R(kind,a,o){const r=newReport(kind,a.id);r.author=o.by;r.team=o.team||[o.by];r.resp=o.resp||o.by;r.created=tAt(o.day,9);r.updated=tAt(o.day+(o.dur||0),16);r.synced=true;r.demo=true;r.d.verified=true;
+  const sts=stages(r);sts.forEach(k=>{if(k!=='finish')r.d.st[k]='done'});r.stage=o.stage!=null?o.stage:sts.length-1;r.status=o.status||'done';if(r.status!=='
