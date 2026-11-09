@@ -1,0 +1,46 @@
+name: Разбор API
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  dump:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: backup
+          path: src
+      - name: Выгрузить адреса и справочники
+        run: |
+          set +e
+          F=$(ls src/*.apk | head -1)
+          OUT=docs/apk-inspect/www
+          mkdir -p "$OUT"
+          unzip -p "$F" assets/www/index.html > /tmp/index.html
+          python3 - /tmp/index.html "$OUT/api.txt" <<'PY'
+          import re, sys
+          s = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+          pats = [r"fetch\([^\n]{0,140}", r"https?://[^\s\"'`)]{5,140}",
+                  r"/api/[A-Za-z0-9_/\-]{1,70}", r"WebSocket[^\n]{0,80}",
+                  r"(?:API|SERVER|BASE|HOST|ENDPOINT|URL)[A-Za-z_]{0,12}\s*=\s*[^\n;]{0,140}",
+                  r"(?:const|var|let)\s+(?:ST|ROLES|visTypes|TYPES|DEF_[A-Z_]+)\s*=\s*[^\n]{0,400}"]
+          out = []
+          for p in pats:
+              found = sorted(set(re.findall(p, s)))
+              out.append("== %s: %d ==" % (p[:40], len(found)))
+              out.extend(found[:120])
+              out.append("")
+          open(sys.argv[2], "w", encoding="utf-8").write("\n".join(out))
+          print("готово")
+          PY
+          wc -c "$OUT/api.txt"
+          git config user.name api-dump
+          git config user.email noreply@users.noreply.github.com
+          git add docs/apk-inspect
+          git commit -m "www: адреса API и справочники" || true
+          git push || true
