@@ -1,0 +1,46 @@
+name: Инспекция пакета
+
+on:
+  workflow_dispatch:
+    inputs:
+      path:
+        description: 'Файл в репозитории'
+        required: true
+        default: 'HD785-7_axle_app.zip'
+      ref:
+        description: 'Ветка, где лежит файл'
+        required: true
+        default: 'backup'
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          path: src
+      - name: Разобрать архив
+        run: |
+          unzip -l "src/${{ inputs.path }}" > /tmp/entries.txt || true
+          mkdir -p /tmp/x
+          unzip -o "src/${{ inputs.path }}" -d /tmp/x > /dev/null || true
+          OUT=docs/pack-inspect
+          mkdir -p "$OUT"
+          cp /tmp/entries.txt "$OUT/entries.txt"
+          for f in index.json techdata.json search.json; do
+            if [ -f "/tmp/x/$f" ]; then head -c 200000 "/tmp/x/$f" > "$OUT/$f.txt"; fi
+          done
+          grep -o '"version": *[0-9]*' "$OUT/index.json.txt" | head -1 | tee -a $GITHUB_STEP_SUMMARY || true
+          rm -rf /tmp/x src
+      - name: Сохранить в репозиторий
+        run: |
+          git config user.name pack-inspect
+          git config user.email noreply@users.noreply.github.com
+          git add docs/pack-inspect
+          git commit -m "Инспекция пакета" || true
+          git push || true
