@@ -1,0 +1,19 @@
+== fetch\([^\n]{0,140}: 3 ==
+fetch(base+code+'-lang.wasm');if(!r.ok)throw new Error('нет языковых данных '+code);return{code,data:new Uint8Array(await r.arrayBuffer())}}));con
+fetch(src)).blob();return new File([blob],`${base}_${d}${n?'_'+n:''}.${blob.type.includes('png')?'png':'jpg'}`,{type:blob.type||'image/jpeg'})}
+fetch(u).then(r=>{if(!r.ok)throw new Error('нет файла '+u);return r.arrayBuffer()})));PDFLIBS={f1,f2,lg};return PDFLIBS}
+
+== https?://[^\s\"'`)]{5,140}: 1 ==
+https://www.google.com/search?tbm=isch&q=${q}
+
+== /api/[A-Za-z0-9_/\-]{1,70}: 0 ==
+
+== WebSocket[^\n]{0,80}: 0 ==
+
+== (?:API|SERVER|BASE|HOST|ENDPOINT|URL)[A-: 0 ==
+
+== (?:const|var|let)\s+(?:ST|ROLES|visTypes: 4 ==
+const ROLES={admin:'Администратор',chief:'Главный инженер',engineer:'Инженер'};
+const ST={to:'ТО по чек-листу',verify:'Сверка данных',select:'Состав отчёта',before:'Фото до мойки',after:'Фото после мойки',missing:'Отсутствующие компоненты',disasm:'Разборка и неисправности',meas:'Замеры компонентов',vafter:'Фото общего вида',fluids:'Фильтры и жидкости',inspect:'Внешний осмотр',defects:'Неисправности',works:'Работы и рекомендации',cons:'Расходные материалы',costs:'Время и суточные',arr:
+const TYPES=['ДВС','АКПП','КПП','Редуктор','Мост','Гидротрансформатор','Раздаточная коробка','Гидронасос','Другое'];
+const visTypes=()=>{const u=me();return u&&u.types&&u.types.length?u.types:null};
