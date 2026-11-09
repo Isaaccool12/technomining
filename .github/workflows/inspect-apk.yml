@@ -17,20 +17,31 @@ jobs:
           path: src
       - name: Разобрать APK
         run: |
+          set +e
           F="src/TechnoMining-0.2-test (1).apk"
           [ -f "$F" ] || F=$(ls src/*.apk | head -1)
           echo "Файл: $F"
           OUT=docs/apk-inspect
           mkdir -p "$OUT"
-          unzip -l "$F" > "$OUT/entries.txt" || true
+          unzip -l "$F" > "$OUT/entries.txt" 2>&1
           AAPT=$(ls -d /usr/local/lib/android/sdk/build-tools/*/aapt2 2>/dev/null | tail -1)
-          if [ -n "$AAPT" ]; then "$AAPT" dump badging "$F" > "$OUT/badging.txt" 2>&1 || true; fi
-          unzip -p "$F" assets/flutter_assets/AssetManifest.json > "$OUT/assets.json" 2>/dev/null || true
-          mkdir -p /tmp/apk && unzip -o "$F" -d /tmp/apk > /dev/null || true
-          SO=$(ls /tmp/apk/lib/*/libapp.so 2>/dev/null | head -1)
-          python3 - "$SO" "$OUT/strings-ru.txt" <<'PY'
+          [ -n "$AAPT" ] && "$AAPT" dump badging "$F" > "$OUT/badging.txt" 2>&1
+          unzip -p "$F" assets/flutter_assets/AssetManifest.json > "$OUT/assets.json" 2>/dev/null
+          rm -rf /tmp/apk && mkdir -p /tmp/apk
+          unzip -o "$F" -d /tmp/apk > /tmp/unzip.log 2>&1
+          { echo "--- unzip ---"; tail -20 /tmp/unzip.log; echo "--- tree ---"; find /tmp/apk -maxdepth 2 | head -100; } > "$OUT/structure.txt"
+          TARGET=$(ls /tmp/apk/lib/*/libapp.so 2>/dev/null | head -1)
+          [ -z "$TARGET" ] && TARGET=$(ls /tmp/apk/assets/flutter_assets/kernel_blob.bin 2>/dev/null | head -1)
+          [ -z "$TARGET" ] && TARGET=$(ls /tmp/apk/lib/*/*.so 2>/dev/null | head -1)
+          [ -z "$TARGET" ] && TARGET=$(ls /tmp/apk/classes*.dex 2>/dev/null | head -1)
+          echo "Цель для строк: ${TARGET:-не найдена}"
+          if [ -n "$TARGET" ]; then
+            python3 - "$TARGET" "$OUT/strings-ru.txt" <<'PY'
           import re, sys
-          data = open(sys.argv[1], 'rb').read()
+          try:
+              data = open(sys.argv[1], 'rb').read()
+          except OSError:
+              data = b''
           seen, out = set(), []
           for m in re.finditer(rb'(?:[\xd0\xd1][\x80-\xbf]|[ -~]){4,}', data):
               try:
@@ -38,11 +49,17 @@ jobs:
               except UnicodeDecodeError:
                   continue
               if re.search('[А-Яа-яЁё]', s) and s not in seen:
-                  seen.add(s); out.append(s)
-          open(sys.argv[2], 'w', encoding='utf-8').write('\n'.join(out[:1500]))
+                  seen.add(s)
+                  out.append(s)
+          open(sys.argv[2], 'w', encoding='utf-8').write('\n'.join(out[:2000]))
+          print('строк:', len(out), 'из', sys.argv[1])
           PY
+          else
+            echo "файл с кодом не найден" > "$OUT/strings-ru.txt"
+          fi
           ls -la "$OUT"
       - name: Сохранить
+        if: always()
         run: |
           git config user.name apk-inspect
           git config user.email noreply@users.noreply.github.com
