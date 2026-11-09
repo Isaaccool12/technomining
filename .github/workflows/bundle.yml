@@ -1,0 +1,46 @@
+name: Пакет материалов
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: backup
+          path: old
+      - name: Собрать архив
+        run: |
+          set -e
+          OUT=technomining-handoff
+          rm -rf $OUT && mkdir -p $OUT
+          cp -r docs $OUT/docs || true
+          cp -r webview $OUT/webview || true
+          cp -r app $OUT/app || true
+          cp -r converter $OUT/converter || true
+          mkdir -p $OUT/workflows && cp .github/workflows/*.yml $OUT/workflows/ || true
+          mkdir -p $OUT/backup && cp old/*.apk old/*.zip $OUT/backup/ || true
+          {
+            echo "ТехноМайнинг — пакет материалов"
+            echo "дата: $(date -u +%F)"
+            echo "main: $GITHUB_SHA"
+            echo "состав: docs, webview, app, converter, workflows, backup"
+          } > $OUT/README.txt
+          find $OUT -type f -printf '%10s  %p\n' | sort -k2 > $OUT/MANIFEST.txt
+          zip -qr technomining-handoff.zip $OUT
+          sha256sum technomining-handoff.zip | tee technomining-handoff.zip.sha256
+          du -h technomining-handoff.zip
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: handoff
+          name: Пакет материалов
+          prerelease: true
+          files: |
+            technomining-handoff.zip
+            technomining-handoff.zip.sha256
